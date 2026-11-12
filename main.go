@@ -48,6 +48,8 @@ type Product struct {
 	ID                 string `json:"id"`
 	Name               string `json:"name"`
 	Manufacturer       string `json:"manufacturer"`
+	Supplier           string `json:"supplier"` // who it is bought from, e.g. Sysco
+	Tags               string `json:"tags"`     // optional extra uses, comma separated
 	Category           string `json:"category"`
 	Location           string `json:"location"`
 	RevisionDate       string `json:"revisionDate"`
@@ -66,15 +68,64 @@ type Product struct {
 
 type Library struct {
 	Categories []string   `json:"categories"`
+	Locations  []string   `json:"locations"`
 	Products   []*Product `json:"products"`
+	Schema     int        `json:"schema"`
 	// Starter sheets already copied in, so one that a manager removes
 	// does not come back the next time the program opens.
 	StarterApplied []string `json:"starterApplied"`
 }
 
+// catchAll is the category that always exists, so no product is ever left
+// without one.
+const catchAll = "Other / Miscellaneous"
+
 var defaultCategories = []string{
-	"Dish Machine", "Sanitizers", "Degreasers", "Floor Care",
-	"Restroom", "Laundry", "Pest Control", "Other",
+	"Dish Machine", "Sanitizers & Disinfectants", "Degreasers", "General Cleaning",
+	"Floor Care", "Restroom Cleaning", "Laundry", "Drain Maintenance",
+	"Descalers & Delimers", "Pest Control", "Hand Hygiene", "Maintenance Chemicals",
+	"Air Care & Deodorizers", catchAll,
+}
+
+var defaultLocations = []string{
+	"Dish Room", "Janitorial Closet", "Kitchen Chemical Storage", "Laundry Area", "Maintenance Room",
+}
+
+// upgrade brings a library made by an earlier version up to the current
+// category list: the three renamed categories carry their products across,
+// and the new categories are added without disturbing any the manager made.
+func (s *store) upgrade() bool {
+	if s.lib.Schema >= 2 {
+		return false
+	}
+	renamed := map[string]string{"Sanitizers": "Sanitizers & Disinfectants", "Restroom": "Restroom Cleaning", "Other": catchAll}
+	have := map[string]bool{}
+	var cats []string
+	for _, c := range s.lib.Categories {
+		if to, ok := renamed[c]; ok {
+			c = to
+		}
+		if c != catchAll && !have[c] {
+			have[c] = true
+			cats = append(cats, c)
+		}
+	}
+	for _, c := range defaultCategories {
+		if c != catchAll && !have[c] {
+			cats = append(cats, c)
+		}
+	}
+	s.lib.Categories = append(cats, catchAll)
+	for _, p := range s.lib.Products {
+		if to, ok := renamed[p.Category]; ok {
+			p.Category = to
+		}
+	}
+	if len(s.lib.Locations) == 0 {
+		s.lib.Locations = defaultLocations
+	}
+	s.lib.Schema = 2
+	return true
 }
 
 type store struct {
@@ -181,7 +232,7 @@ func (s *store) scan() bool {
 		}
 		title := strings.Join(strings.Fields(strings.NewReplacer("_", " ", "-", " ").Replace(strings.TrimSuffix(name, filepath.Ext(name)))), " ")
 		s.lib.Products = append(s.lib.Products, &Product{
-			ID: newID(), Name: title, Category: "Other", File: name, AddedAt: now(), UpdatedAt: now(),
+			ID: newID(), Name: title, Category: catchAll, File: name, AddedAt: now(), UpdatedAt: now(),
 		})
 		changed = true
 	}
@@ -196,7 +247,7 @@ func (s *store) load() error {
 	}
 	b, err := os.ReadFile(s.file())
 	if errors.Is(err, fs.ErrNotExist) {
-		s.lib = Library{Categories: defaultCategories, Products: []*Product{}}
+		s.lib = Library{Categories: defaultCategories, Locations: defaultLocations, Products: []*Product{}, Schema: 2}
 		s.applyStarter()
 		s.scan()
 		return s.save()
@@ -213,8 +264,9 @@ func (s *store) load() error {
 	if s.lib.Products == nil {
 		s.lib.Products = []*Product{}
 	}
+	upgraded := s.upgrade()
 	starter := s.applyStarter()
-	if s.scan() || starter {
+	if s.scan() || starter || upgraded {
 		return s.save()
 	}
 	return nil
@@ -372,6 +424,8 @@ func (s *store) routes(mux *http.ServeMux) {
 		}
 		writeJSON(w, 200, map[string]any{
 			"categories": s.lib.Categories,
+			"locations":  s.lib.Locations,
+			"catchAll":   catchAll,
 			"products":   s.lib.Products,
 			"dataFolder": s.dir,
 		})
@@ -432,6 +486,7 @@ func (s *store) routes(mux *http.ServeMux) {
 			p.Pages = in.Pages
 		}
 		p.Name, p.Manufacturer, p.Category, p.Location = in.Name, in.Manufacturer, in.Category, in.Location
+		p.Supplier, p.Tags = in.Supplier, in.Tags
 		p.RevisionDate, p.Hazards, p.PPE = in.RevisionDate, in.Hazards, in.PPE
 		p.FirstAidEyes, p.FirstAidSkin = in.FirstAidEyes, in.FirstAidSkin
 		p.FirstAidInhalation, p.FirstAidSwallowed = in.FirstAidInhalation, in.FirstAidSwallowed
@@ -494,12 +549,12 @@ func (s *store) routes(mux *http.ServeMux) {
 		var cats []string
 		for _, c := range in.Categories {
 			c = strings.TrimSpace(c)
-			if c != "" && c != "Other" && !seen[strings.ToLower(c)] {
+			if c != "" && c != catchAll && !seen[strings.ToLower(c)] {
 				seen[strings.ToLower(c)] = true
 				cats = append(cats, c)
 			}
 		}
-		cats = append(cats, "Other") // always kept, so no product is ever left without a category
+		cats = append(cats, catchAll)
 		valid := map[string]bool{}
 		for _, c := range cats {
 			valid[c] = true
@@ -509,7 +564,7 @@ func (s *store) routes(mux *http.ServeMux) {
 				p.Category = strings.TrimSpace(to)
 			}
 			if !valid[p.Category] {
-				p.Category = "Other"
+				p.Category = catchAll
 			}
 		}
 		s.lib.Categories = cats

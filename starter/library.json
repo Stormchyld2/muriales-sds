@@ -3,7 +3,9 @@
     {
       "id": "keystone-greaselift-rtu",
       "name": "Keystone Greaselift Degreaser & Fryer Cleaner RTU",
-      "manufacturer": "Ecolab Inc. (Keystone)",
+      "manufacturer": "Ecolab Inc.",
+      "supplier": "Sysco",
+      "tags": "Fryer cleaner",
       "category": "Degreasers",
       "location": "",
       "revisionDate": "2025-08-13",

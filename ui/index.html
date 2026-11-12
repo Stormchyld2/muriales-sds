@@ -105,7 +105,7 @@ dt{font-weight:600}dd{margin:0}
 #toast.err{border-color:#e25a68;background:#3a0d14}
 #lost{position:fixed;top:0;left:0;right:0;background:#c01f30;padding:10px;text-align:center;font-weight:600;display:none;z-index:50}
 .catrow{display:flex;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid #4a4d55}
-.catrow b{flex:1}
+.catrow .btn{flex:none}
 code{background:#1f2125;border:1px solid #565a62;border-radius:4px;padding:2px 6px;word-break:break-all}
 </style>
 </head>
@@ -174,7 +174,23 @@ const PICTO = {
 };
 $("#pictos").innerHTML = PICTO.flame + PICTO.bang + PICTO.skull;
 
-const state = { lib: {categories: [], products: [], dataFolder: ""}, sel: new Set(), q: "", cat: "", sort: {key: "name", dir: 1}, view: "library", id: null, form: null };
+const CAT_HELP = {
+  "Dish Machine": "Machine detergents, rinse aids, delimers, machine descalers",
+  "Sanitizers & Disinfectants": "Quaternary ammonium sanitizers, chlorine sanitizers, disinfectants",
+  "Degreasers": "Heavy-duty degreasers, grill cleaners, oven cleaners, fryer cleaners",
+  "General Cleaning": "All-purpose cleaners, surface cleaners, glass cleaners",
+  "Floor Care": "Floor cleaners, floor degreasers, strippers, floor finishes",
+  "Restroom Cleaning": "Toilet bowl cleaners, urinal cleaners, bathroom disinfectants",
+  "Laundry": "Laundry detergents, bleach, fabric softeners, stain removers",
+  "Drain Maintenance": "Drain openers, drain cleaners, chemical drain treatments",
+  "Descalers & Delimers": "Lime removers, mineral deposit removers, equipment descalers",
+  "Pest Control": "Insecticides, pesticides, rodent-control chemicals",
+  "Hand Hygiene": "Hand soaps, hand sanitizers, specialty hand cleaners",
+  "Maintenance Chemicals": "Lubricants, adhesives, solvents, equipment maintenance chemicals",
+  "Air Care & Deodorizers": "Air fresheners, odor neutralizers, deodorizing chemicals",
+  "Other / Miscellaneous": "Chemicals that don't fit an established category",
+};
+const state = { lib: {categories: [], locations: [], catchAll: "Other / Miscellaneous", products: [], dataFolder: ""}, sel: new Set(), q: "", cat: "", sort: {key: "name", dir: 1}, view: "library", id: null, form: null };
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
@@ -203,7 +219,7 @@ function visible() {
   const k = state.sort.key;
   const val = p => (k === "date" ? sdsDate(p) : p[k] || "").toLowerCase();
   return state.lib.products
-    .filter(p => (!state.cat || p.category === state.cat) && (!q || (p.name + " " + p.manufacturer).toLowerCase().includes(q)))
+    .filter(p => (!state.cat || p.category === state.cat) && (!q || [p.name, p.manufacturer, p.supplier, p.tags].join(" ").toLowerCase().includes(q)))
     .sort((a, b) => val(a).localeCompare(val(b)) * state.sort.dir || a.name.localeCompare(b.name));
 }
 
@@ -235,7 +251,7 @@ function vLibrary() {
       </tbody></table>`;
   return `
   <div class="row">
-    <div class="search">${icon("search")}<input id="q" class="field" placeholder="Search by product name or manufacturer..." value="${esc(state.q)}"></div>
+    <div class="search">${icon("search")}<input id="q" class="field" placeholder="Search by product name, manufacturer, supplier or tag..." value="${esc(state.q)}"></div>
     <label>Category:</label>
     <select id="cat" class="field" style="width:210px"><option value="">All Categories</option>
       ${state.lib.categories.map(c => `<option ${c === state.cat ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
@@ -268,7 +284,9 @@ function vDetail() {
       <div class="row" style="align-items:stretch;flex-wrap:nowrap">
         <div class="panel grow"><dl>
           <dt>Manufacturer:</dt><dd>${esc(p.manufacturer) || "—"}</dd>
+          <dt>Supplier:</dt><dd>${esc(p.supplier) || "—"}</dd>
           <dt>Category:</dt><dd>${esc(p.category) || "—"}</dd>
+          ${(p.tags || "").trim() ? `<dt>Also used for:</dt><dd>${esc(p.tags)}</dd>` : ""}
           <dt>Storage Location:</dt><dd>${esc(p.location) || "—"}</dd>
           <dt>SDS Revision Date:</dt><dd>${fmtDate(p.revisionDate) || "—"}</dd>
           <dt>Last Updated:</dt><dd>${fmtDate(p.updatedAt)}</dd>
@@ -293,12 +311,13 @@ function vDetail() {
   </div>`;
 }
 
-function blankForm() { return {id: null, name: "", manufacturer: "", category: state.lib.categories[0] || "Other", location: "", revisionDate: "", hazards: "", firstAidEyes: "", firstAidSkin: "", firstAidInhalation: "", firstAidSwallowed: "", ppe: "", pages: 0, file: null, fileNote: ""}; }
+const locations = () => [...new Set([...(state.lib.locations || []), ...state.lib.products.map(p => (p.location || "").trim()).filter(Boolean)])];
+function blankForm() { return {id: null, name: "", manufacturer: "", supplier: "", tags: "", category: state.lib.categories[0] || state.lib.catchAll, location: "", revisionDate: "", hazards: "", firstAidEyes: "", firstAidSkin: "", firstAidInhalation: "", firstAidSwallowed: "", ppe: "", pages: 0, file: null, fileNote: ""}; }
 
 function vForm() {
   const f = state.form || (state.form = blankForm());
   const inp = (k, ph = "") => `<input class="field" data-f="${k}" value="${esc(f[k])}" placeholder="${ph}">`;
-  const ta = (k, ph) => `<textarea class="field" rows="1" data-f="${k}" placeholder="${ph}">${esc(f[k])}</textarea>`;
+  const ta = (k, ph) => `<textarea class="field" rows="2" data-f="${k}" placeholder="${ph}">${esc(f[k])}</textarea>`;
   const fileText = f.file ? `<span class="file">${esc(f.file.name)}</span><small>${esc(f.fileNote)}</small>`
     : f.id ? `<small>Current PDF is kept.<br>Drop a new PDF here only to replace it.</small>`
     : `<small>Drag and drop a PDF file here<br>or click Browse...</small>`;
@@ -309,9 +328,13 @@ function vForm() {
       <input type="file" id="file" accept="application/pdf,.pdf" hidden></div>
     <div class="fields">
       <label>Product Name: <span class="req">*</span></label>${inp("name")}
-      <label>Manufacturer:</label>${inp("manufacturer", "e.g. Ecolab, Sysco, Keystone")}
-      <label>Category:</label><select class="field" data-f="category">${state.lib.categories.map(c => `<option ${c === f.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
-      <label>Storage Location:</label>${inp("location", "e.g. Dish Room, Janitorial Closet")}
+      <label>Manufacturer:</label>${inp("manufacturer", "The company named on the SDS, e.g. Ecolab Inc.")}
+      <label>Supplier:</label>${inp("supplier", "Who you buy it from, e.g. Sysco")}
+      <label>Category:</label><div><select class="field" data-f="category">${state.lib.categories.map(c => `<option ${c === f.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
+        <div class="hint" id="cathelp" style="margin-top:3px">${esc(CAT_HELP[f.category] || "")}</div></div>
+      <label>Also Used For:</label>${inp("tags", "Optional tags, separated by commas, e.g. Fryer cleaner, Grill cleaner")}
+      <label>Storage Location:</label><div><input class="field" data-f="location" list="loclist" value="${esc(f.location)}" placeholder="Choose from the list or type a new location">
+        <datalist id="loclist">${locations().map(l => `<option value="${esc(l)}">`).join("")}</datalist></div>
       <label>SDS Revision Date:</label><input type="date" class="field" data-f="revisionDate" value="${esc(f.revisionDate)}" style="width:190px">
     </div>
   </div>
@@ -335,13 +358,13 @@ function vCats() {
   const count = c => state.lib.products.filter(p => p.category === c).length;
   const cs = state.lib.categories;
   return `
-  <div class="panel" style="max-width:720px">
-    <p class="hint" style="margin-top:0">Categories group the library and set the order of sections in the printed book. “Other” always stays, and products from a removed category move into it.</p>
-    ${cs.map((c, i) => `<div class="catrow"><b>${esc(c)}</b><span class="hint">${count(c)} product${count(c) === 1 ? "" : "s"}</span>
-      <button class="btn small" data-act="cat-move" data-i="${i}" data-d="-1" ${i === 0 || c === "Other" ? "disabled" : ""} title="Move up">▲</button>
-      <button class="btn small" data-act="cat-move" data-i="${i}" data-d="1" ${i >= cs.length - 2 || c === "Other" ? "disabled" : ""} title="Move down">▼</button>
-      <button class="btn small" data-act="cat-rename" data-i="${i}" ${c === "Other" ? "disabled" : ""}>Rename</button>
-      <button class="btn small wine" data-act="cat-remove" data-i="${i}" ${c === "Other" ? "disabled" : ""}>Remove</button></div>`).join("")}
+  <div class="panel" style="max-width:860px">
+    <p class="hint" style="margin-top:0">Categories group the library and set the order of sections in the printed book. Each product has one category. “${esc(state.lib.catchAll)}” always stays, and products from a removed category move into it.</p>
+    ${cs.map((c, i) => `<div class="catrow"><div class="grow"><b>${esc(c)}</b><div class="hint">${esc(CAT_HELP[c] || "")}</div></div><span class="hint" style="white-space:nowrap">${count(c)} product${count(c) === 1 ? "" : "s"}</span>
+      <button class="btn small" data-act="cat-move" data-i="${i}" data-d="-1" ${i === 0 || c === state.lib.catchAll ? "disabled" : ""} title="Move up">▲</button>
+      <button class="btn small" data-act="cat-move" data-i="${i}" data-d="1" ${i >= cs.length - 2 || c === state.lib.catchAll ? "disabled" : ""} title="Move down">▼</button>
+      <button class="btn small" data-act="cat-rename" data-i="${i}" ${c === state.lib.catchAll ? "disabled" : ""}>Rename</button>
+      <button class="btn small wine" data-act="cat-remove" data-i="${i}" ${c === state.lib.catchAll ? "disabled" : ""}>Remove</button></div>`).join("")}
     <div class="row" style="margin-top:14px"><input id="newcat" class="field grow" placeholder="New category name" maxlength="40">
       <button class="btn green" data-act="cat-add">${icon("plus")}Add Category</button></div>
   </div>`;
@@ -367,7 +390,7 @@ function vSettings() {
 function vAbout() {
   return `
   <div class="panel" style="max-width:760px">
-    <h3 style="margin-top:0">Muriale's SDS Manager <span class="hint">version 1.1</span></h3>
+    <h3 style="margin-top:0">Muriale's SDS Manager <span class="hint">version 1.2</span></h3>
     <p>Keeps the Safety Data Sheet (SDS, formerly MSDS) library for Muriale's Italian Kitchen and prints the paper SDS book.</p>
     <p>${state.lib.products.length} product${state.lib.products.length === 1 ? "" : "s"} in the library.</p>
     <p><b>Emergency:</b> 911 &nbsp;·&nbsp; <b>Poison Control:</b> 1-800-222-1222</p>
@@ -501,7 +524,7 @@ async function buildBook(opt, progress = () => {}) {
         last = p.category;
         const pg = out.addPage([W, H]), inSect = items.filter(q => q.category === last);
         pg.drawRectangle({x: 0, y: 500, width: W, height: 84, color: WINE});
-        const title = fit(last || "Other", F.t, 38, W - 80);
+        const title = fit(last || state.lib.catchAll, F.t, 38, W - 80);
         centre(pg, title, F.t, 38, 530, rgb(1, 1, 1));
         centre(pg, inSect.length + " product" + (inSect.length === 1 ? "" : "s"), F.b, 13, 468, GREY);
         inSect.slice(0, 24).forEach((q, i) => centre(pg, fit(q.name, F.r, 12, W - 120), F.r, 12, 438 - i * 17));
@@ -584,7 +607,7 @@ const ACT = {
   browse(el, e) { if (e.target.id !== "file") $("#file").click(); },
   save: saveForm,
   cancel() { const id = state.form && state.form.id; state.form = null; state.view = id ? "detail" : "library"; render(); },
-  "cat-add"() { const v = $("#newcat").value.trim(); if (!v) return; const c = state.lib.categories; if (c.some(x => x.toLowerCase() === v.toLowerCase())) return toast("That category already exists.", true); return saveCats([...c.slice(0, -1), v, "Other"]); },
+  "cat-add"() { const v = $("#newcat").value.trim(); if (!v) return; const c = state.lib.categories; if (c.some(x => x.toLowerCase() === v.toLowerCase())) return toast("That category already exists.", true); return saveCats([...c.slice(0, -1), v, state.lib.catchAll]); },
   "cat-move"(el) { const c = [...state.lib.categories], i = +el.dataset.i, j = i + +el.dataset.d; [c[i], c[j]] = [c[j], c[i]]; return saveCats(c); },
   "cat-remove"(el) { const c = [...state.lib.categories], [gone] = c.splice(+el.dataset.i, 1); if (state.cat === gone) state.cat = ""; return saveCats(c); },
   "cat-rename"(el) { const old = state.lib.categories[+el.dataset.i];
@@ -609,7 +632,7 @@ document.addEventListener("click", e => {
 document.addEventListener("input", e => {
   const t = e.target;
   if (t.id === "q") { state.q = t.value; state.focusQ = true; render(); }
-  else if (t.dataset.f && state.form) state.form[t.dataset.f] = t.value;
+  else if (t.dataset.f && state.form) { state.form[t.dataset.f] = t.value; if (t.dataset.f === "category") $("#cathelp").textContent = CAT_HELP[t.value] || ""; }
 });
 document.addEventListener("change", e => {
   const t = e.target;

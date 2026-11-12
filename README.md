@@ -7,6 +7,8 @@ paper SDS book.
 ## What it does
 
 - Add, edit, replace and remove safety data sheets (manufacturer PDFs)
+- One category per product from an editable list, plus optional tags, with
+  manufacturer, supplier and storage location kept as separate fields
 - Search by product or manufacturer, filter by category, sort any column
 - Emergency quick view per product: hazards, first aid, protective equipment
 - Print the entire book, selected sheets, one sheet, or the index only, with
