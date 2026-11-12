@@ -12,6 +12,7 @@ import (
 // two programs on one shared folder
 func twoOn(t *testing.T) (a, b *store, dir string) {
 	t.Helper()
+	t.Setenv("SDSBOOK_SECOND", "1") // both copies run here, so treat them as different computers
 	dir = filepath.Join(t.TempDir(), "SDS Data")
 	a = &store{dir: dir}
 	a.startLock()
@@ -154,5 +155,16 @@ func TestRelocateMovesTheLock(t *testing.T) {
 	}
 	if li := readLock(target); li == nil || li.ID != a.lk.id {
 		t.Error("the new folder does not have our lock")
+	}
+}
+
+func TestRestartAfterCrashOnTheSameComputerTakesBackItsLock(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "SDS Data")
+	a := &store{dir: dir}
+	a.startLock() // "crashes" without unlocking
+	b := &store{dir: dir}
+	b.startLock()
+	if b.isReadOnly() {
+		t.Fatal("a restart on the same computer should not have to wait for its own old lock")
 	}
 }

@@ -105,7 +105,7 @@ func (s *store) claim(dir string, force bool) (*lockInfo, bool) {
 	if s.lk.id == "" {
 		s.lk.id = newID()
 	}
-	if cur := readLock(dir); cur != nil && cur.ID != s.lk.id && cur.live() && !force {
+	if cur := readLock(dir); cur != nil && cur.ID != s.lk.id && cur.live() && !force && !sameComputer(cur) {
 		return cur, false
 	}
 	_ = os.MkdirAll(dir, 0o755)
@@ -243,3 +243,14 @@ func (s *store) lockRoutes(mux *http.ServeMux) {
 func (s *store) unlockLocked(dir string) { s.unlock(dir) }
 
 var _ = fmt.Sprintf
+
+// sameComputer reports whether a lock was left by this very computer and user. The program
+// cannot be open twice on one computer, so such a lock is left over from a crash or a
+// forced close and is taken back at once instead of making the manager wait.
+func sameComputer(cur *lockInfo) bool {
+	if os.Getenv("SDSBOOK_SECOND") != "" { // testing: pretend to be a copy on another computer
+		return false
+	}
+	u, h := me()
+	return h != "" && cur.Host == h && cur.User == u
+}

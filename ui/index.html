@@ -68,7 +68,9 @@ dt{font-weight:600}dd{margin:0}
 .sum svg{width:34px;height:34px;flex:none}
 .sum p{margin:0;white-space:pre-wrap}
 .sum .none{color:var(--mute);font-style:italic}
-.form{display:grid;grid-template-columns:230px 1fr;gap:16px}
+.form{display:grid;grid-template-columns:230px 1fr;gap:16px;flex:none}
+.scrolly{max-height:300px;overflow:auto}
+.stickybar{position:sticky;bottom:-16px;background:var(--bg);padding:8px 0;flex:none;z-index:2}
 .drop{border:2px dashed #999;border-radius:8px;padding:18px 12px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:190px}
 .drop.over{border-color:var(--gold);background:#3d3a30}
 .drop svg{width:44px;height:44px}
@@ -78,9 +80,10 @@ dt{font-weight:600}dd{margin:0}
 .fields label{font-weight:600}
 .fields textarea{resize:vertical;min-height:36px}
 .req{color:#ff6b6b}
-.sect{border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.sect{border:1px solid var(--line);border-radius:6px;overflow:hidden;display:flex;flex-direction:column;flex:1 1 200px;min-height:150px}
 .sect>h2{margin:0;padding:6px 12px;font-size:15px;background:linear-gradient(var(--wine),var(--wine2))}
-.sect>div{padding:12px}
+.sect>h2{flex:none}
+.sect>div{padding:12px;overflow:auto;flex:1;min-height:0}
 .hint{color:var(--mute);font-size:13px}
 #modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:20}
 #modal.show{display:flex}
@@ -442,7 +445,7 @@ function vForm() {
         <label style="display:flex;gap:9px;align-items:center;font-weight:400;cursor:pointer"><input type="checkbox" data-fc="verify" ${f.verify ? "checked" : ""}>I have checked this summary against the manufacturer's SDS${f.revisionDate ? " (revised " + fmtDate(f.revisionDate) + ")" : ""}</label>
         <div class="row" style="margin-top:6px"><span>Checked by:</span><input class="field" data-f="verifiedBy" value="${esc(f.verifiedBy)}" placeholder="Name or initials" style="width:220px" maxlength="40"><span class="hint grow">${status}</span></div></div>
     </div></div></div>
-  <div class="row" style="justify-content:center">
+  <div class="row stickybar" style="justify-content:center">
     <button class="btn green big" data-act="save">${icon("save")}Save</button>
     <button class="btn wine big" data-act="cancel">${icon("x")}Cancel</button>
   </div>`;
@@ -608,9 +611,9 @@ function vNotes() {
   </div>
   <div class="panel" style="max-width:860px">
     <h3 style="margin-top:0">Open notes</h3>
-    ${open.length ? open.map(n => `<div class="catrow"><div class="grow"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="hint">${esc(n.by) || "A manager"}, ${when(n.at)}</div></div><button class="btn small green" data-act="note-done" data-id="${n.id}">Done</button></div>`).join("") : `<p class="hint">No open notes.</p>`}
+    <div class="scrolly">${open.length ? open.map(n => `<div class="catrow"><div class="grow"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="hint">${esc(n.by) || "A manager"}, ${when(n.at)}</div></div><button class="btn small green" data-act="note-done" data-id="${n.id}">Done</button></div>`).join("") : `<p class="hint">No open notes.</p>`}</div>
   </div>
-  ${done.length ? `<div class="panel" style="max-width:860px"><h3 style="margin-top:0">Finished notes</h3>${done.map(n => `<div class="catrow"><div class="grow"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="hint">${esc(n.by) || "A manager"}, ${when(n.at)} · finished ${when(n.doneAt)}${n.doneBy ? " by " + esc(n.doneBy) : ""}</div></div><button class="btn small" data-act="note-reopen" data-id="${n.id}">Reopen</button></div>`).join("")}</div>` : ""}`;
+  ${done.length ? `<div class="panel" style="max-width:860px"><h3 style="margin-top:0">Finished notes</h3><div class="scrolly">${done.map(n => `<div class="catrow"><div class="grow"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="hint">${esc(n.by) || "A manager"}, ${when(n.at)} · finished ${when(n.doneAt)}${n.doneBy ? " by " + esc(n.doneBy) : ""}</div></div><button class="btn small" data-act="note-reopen" data-id="${n.id}">Reopen</button></div>`).join("")}</div></div>` : ""}`;
 }
 
 /* ---------- the "someone is editing" lock ---------- */
