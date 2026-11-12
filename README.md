@@ -64,3 +64,7 @@ PDF assembly uses [pdf-lib](https://pdf-lib.js.org/) (MIT licence), bundled as
 - **Originals stay unchanged.** Previews show the stored PDF as is. Printed books copy the manufacturer's pages as they are; binder page numbers are optional and off by default. The index always lists the page each SDS starts on. "Printer-friendly" outlines the bars instead of filling them.
 - **Import/Export:** product list as CSV, whole library as a zip, bulk PDF import, library-zip import.
 - **Diagnostics and Recovery:** health checks with a saveable report; go back one save, rebuild from the PDFs in the folder, add back old PDFs.
+
+## Auto-drafting the summary (1.5)
+
+Choosing or dragging a PDF onto **Add SDS** reads the sheet and drafts the product name, manufacturer, SDS date, signal word, hazard pictograms, hazards, first aid and PPE. PDFs dropped into the `sheets` folder, or bulk-imported, arrive the same way, marked "needs review". The reader is built into the program (no internet needed). It finds Sections 1, 2, 4 and 8 of the standard 16-section SDS layout; pictograms come from the H-codes and statements in Section 2. Scanned (image-only) and password-protected PDFs cannot be read and are left for a manager to type. A draft is never counted as verified: a manager checks it and ticks the verification box. Existing text is never overwritten unless asked.

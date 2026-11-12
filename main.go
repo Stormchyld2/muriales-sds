@@ -413,10 +413,18 @@ func (s *store) scan() bool {
 		}
 		title := titleFromFile(name)
 		sum, _ := hashFile(filepath.Join(s.pdfDir(), name))
-		s.lib.Products = append(s.lib.Products, &Product{
+		np := &Product{
 			ID: newID(), Name: title, Category: catchAll, File: name, NeedsReview: true,
 			AddedAt: now(), UpdatedAt: now(), PDFUpdatedAt: now(), SHA256: sum,
-		})
+		}
+		// A PDF dropped into the folder arrives with its summary already drafted for a manager to check.
+		if d := draftFile(filepath.Join(s.pdfDir(), name)); d != nil {
+			if d.Name != "" && regexp.MustCompile(`^[\d\s._-]*$|^sds\b`).MatchString(strings.ToLower(title)) {
+				np.Name = d.Name
+			}
+			applyDraft(np, d)
+		}
+		s.lib.Products = append(s.lib.Products, np)
 		changed = true
 	}
 	return changed

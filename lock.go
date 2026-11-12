@@ -193,7 +193,7 @@ var readOnlyOK = map[string]bool{
 func (s *store) gate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet || r.Method == http.MethodHead || !s.isReadOnly() ||
-			readOnlyOK[r.URL.Path] || strings.HasPrefix(r.URL.Path, "/api/lock") {
+			readOnlyOK[r.URL.Path] || strings.HasSuffix(r.URL.Path, "/extract") || strings.HasPrefix(r.URL.Path, "/api/lock") {
 			next.ServeHTTP(w, r)
 			return
 		}

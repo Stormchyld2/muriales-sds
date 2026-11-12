@@ -374,7 +374,7 @@ function vDetail() {
         </dl></div>
         <div class="poison"><span>Poison Control</span><strong>1-800-222-1222</strong><span>Emergency: 911</span></div>
       </div>
-      ${p.needsReview ? `<div class="note warn"><span class="grow"><b>Needs review.</b> This PDF was copied into the folder. Click Edit and fill in the manufacturer, storage location and SDS revision date.</span></div>` : ""}
+      ${p.needsReview ? `<div class="note warn"><span class="grow"><b>Needs review.</b> This PDF was added without a manager's check. Any details shown were drafted from the sheet. Click Edit, check them against the PDF, and add the category and storage location.</span></div>` : ""}
       ${p.missing ? `<div class="note bad"><span class="grow"><b>The PDF for this product is missing from the sheets folder.</b> Use Settings, Clean Up, Replace to add it again.</span></div>` : ""}
       ${(state.lib.integrity || {})[p.id] === "changed" ? `<div class="note bad"><span class="grow"><b>This PDF is not the file that was added.</b> It was changed outside the program. Open it and check it. If it is the right sheet, accept it; the binder will then show this sheet as needing a reprint.</span><button class="btn small" data-act="integ-accept" data-id="${p.id}">Accept This File</button></div>` : ""}
       ${verify}
@@ -430,6 +430,7 @@ function vForm() {
     </div>
   </div>
   <div class="sect"><h2>Emergency Summary (At-a-Glance)</h2><div>
+    ${extractBox(f)}
     <p class="hint" style="margin:0 0 10px">Optional. Copy the key points from the sheet: Section 2 (hazards), Section 4 (first aid) and Section 8 (protective equipment). You can save now and fill this in later.</p>
     <div class="fields">
       <label>Signal Word:</label><select class="field" data-f="signalWord" style="width:190px">${["", "Warning", "Danger"].map(v => `<option value="${v}" ${v === f.signalWord ? "selected" : ""}>${v || "None on the SDS"}</option>`).join("")}</select>
@@ -532,7 +533,7 @@ function tTransfer() {
   </div>
   <div class="panel" style="max-width:860px">
     <h3 style="margin-top:0">Import many PDFs at once</h3>
-    <p>Choose SDS PDFs from Sysco, a supplier or a folder. Each one is added to the library marked “needs review”, so a manager can fill in the details. PDFs already in the library, and files that are not PDFs, are skipped.</p>
+    <p>Choose SDS PDFs from Sysco, a supplier or a folder. Each one is added to the library marked “needs review”, with the manufacturer, SDS date and emergency summary drafted from the sheet where possible, so a manager can check it. PDFs already in the library, and files that are not PDFs, are skipped.</p>
     <div class="row"><button class="btn green" data-act="import-pdfs">${icon("up")}Choose PDFs...</button></div>
     <input type="file" id="importpdfs" accept="application/pdf,.pdf" multiple hidden>
   </div>
@@ -985,8 +986,38 @@ async function takeFile(file) {
   f.file = file; f.pages = 0; f.fileNote = "";
   try { f.pages = (await PDFDocument.load(await file.arrayBuffer(), {ignoreEncryption: true})).getPageCount(); f.fileNote = f.pages + " page" + (f.pages === 1 ? "" : "s"); }
   catch (e) { f.fileNote = "Page count could not be read"; }
-  if (!f.id && !f.name.trim()) f.name = file.name.replace(/\.pdf$/i, "").replace(/[_-]+/g, " ").replace(/\s*\b(sds|msds)\b\s*/ig, " ").trim();
-  render();
+  if (!f.id && !f.name.trim()) { f.name = file.name.replace(/\.pdf$/i, "").replace(/[_-]+/g, " ").replace(/\s*\b(sds|msds)\b\s*/ig, " ").trim(); f.nameFromFile = true; }
+  f.extract = {kind: "busy"}; render();
+  // Read the sheet and draft the details. This happens for both Browse and drag-and-drop.
+  try {
+    const fd = new FormData(); fd.append("pdf", file);
+    const d = await api("/api/extract", {method: "POST", body: fd});
+    if (state.form === f && f.file === file) mergeDraft(f, d, false);
+  } catch (e) { if (state.form === f) f.extract = {kind: "warn", msg: "The details could not be read from this PDF automatically. Type them from the sheet."}; }
+  if (state.form === f) render();
+}
+// Fills the form from a drafted summary. Only empty fields are filled unless overwrite is set,
+// so nothing a manager typed is lost. A draft is never counted as verified.
+const DRAFT_KEYS = ["manufacturer", "signalWord", "hazards", "firstAidEyes", "firstAidSkin", "firstAidInhalation", "firstAidSwallowed", "ppe"];
+function mergeDraft(f, d, overwrite) {
+  if (d.unreadable) { f.extract = {kind: "warn", msg: d.unreadable}; return; }
+  const set = (k, v) => { if (v && (overwrite || !String(f[k] || "").trim())) f[k] = v; };
+  if (!f.id && d.name && (!f.name.trim() || f.nameFromFile)) { f.name = d.name; f.nameFromFile = false; }
+  DRAFT_KEYS.forEach(k => set(k, d[k]));
+  if (d.revisionDate && (overwrite || f.replaceMode || !f.revisionDate)) f.revisionDate = d.revisionDate;
+  if ((d.pictograms || []).length && (overwrite || !f.pictograms.length)) f.pictograms = [...d.pictograms];
+  f.verify = false;
+  f.extract = {kind: "ok", found: d.found || [], missing: d.missing || [], notes: d.notes || [], draft: d};
+}
+function extractBox(f) {
+  const x = f.extract, stored = f.id && !f.replaceMode;
+  let box = "";
+  if (x && x.kind === "busy") box = `<div class="note warn" style="margin-bottom:10px">Reading the PDF to draft the details...</div>`;
+  else if (x && x.kind === "warn") box = `<div class="note warn" style="margin-bottom:10px"><span class="grow">${esc(x.msg)}</span></div>`;
+  else if (x && x.kind === "ok") box = `<div class="note ok" style="margin-bottom:10px"><span class="grow"><b>Drafted from the PDF.</b> Check every line against the sheet before ticking “verified” below.${x.missing.length ? ` <b>Not found:</b> ${esc(x.missing.join(", "))}.` : ""}${x.notes.map(n => " " + esc(n)).join("")}</span>
+    ${f.replaceMode ? `<button class="btn small" data-act="extract-overwrite">Replace Summary With This Sheet's Draft</button>` : ""}</div>`;
+  if (stored) box += `<div class="row" style="margin:0 0 10px"><button class="btn small" data-act="extract-stored">${icon("search")}Fill Empty Fields From the PDF</button><span class="hint">Reads the stored sheet. Anything already typed is left alone.</span></div>`;
+  return box;
 }
 async function saveForm() {
   const f = state.form;
@@ -994,7 +1025,7 @@ async function saveForm() {
   if ((!f.id || f.replaceMode) && !f.file) return toast(f.replaceMode ? "Choose the new PDF first." : "Choose the SDS PDF for this product.", true);
   if (f.verify && !f.verifiedBy.trim()) return toast("Enter who checked the summary.", true);
   if (f.verify) remembered("by", f.verifiedBy.trim());
-  const {file, fileNote, id, replaceMode, ...meta} = f;
+  const {file, fileNote, id, replaceMode, extract, nameFromFile, ...meta} = f;
   const fd = new FormData(); fd.append("meta", JSON.stringify(meta)); if (file) fd.append("pdf", file);
   const p = await api(id ? "/api/products/" + id : "/api/products", {method: "POST", body: fd});
   await reload(); state.form = null; state.view = "detail"; state.id = p.id; render(); backfillPages();
@@ -1061,6 +1092,9 @@ const ACT = {
     finally { el.disabled = false; } },
   async emerg() { const p = byId(state.id), bytes = await emergencySheet(p), stamp = new Date().toISOString().slice(0, 10);
     showPreview(URL.createObjectURL(new Blob([bytes], {type: "application/pdf"})), true, `${p.name} Emergency Sheet ${stamp}.pdf`, `Emergency Sheet — ${p.name}`, "One page. Check it, then click Print."); },
+  async "extract-stored"(el) { const f = state.form; el.disabled = true;
+    try { mergeDraft(f, await api(`/api/products/${f.id}/extract`, {method: "POST"}), false); } finally { render(); } },
+  "extract-overwrite"() { const f = state.form; if (f.extract && f.extract.draft) { mergeDraft(f, f.extract.draft, true); render(); toast("Summary replaced with the draft from the new sheet. Check it, then verify."); } },
   "open-product"(el) { state.view = "detail"; state.id = el.dataset.id; render(); },
   async "note-add"() { const text = $("#notetext").value.trim(), by = $("#noteby").value.trim(); if (!text) return toast("Write the note first.", true);
     if (by) remembered("by", by); await api("/api/notes", {method: "POST", body: JSON.stringify({by, text})}); await reload(); render(); toast("Note added."); },
@@ -1115,7 +1149,7 @@ document.addEventListener("click", e => {
 document.addEventListener("input", e => {
   const t = e.target;
   if (t.id === "q") { state.q = t.value; state.focusQ = true; render(); }
-  else if (t.dataset.f && state.form) { state.form[t.dataset.f] = t.value; if (t.dataset.f === "category") $("#cathelp").textContent = CAT_HELP[t.value] || ""; }
+  else if (t.dataset.f && state.form) { state.form[t.dataset.f] = t.value; if (t.dataset.f === "name") state.form.nameFromFile = false; if (t.dataset.f === "category") $("#cathelp").textContent = CAT_HELP[t.value] || ""; }
 });
 document.addEventListener("change", e => {
   const t = e.target;
@@ -1124,7 +1158,7 @@ document.addEventListener("change", e => {
   else if (t.id === "importpdfs" && t.files.length) { const files = [...t.files]; t.value = "";
     upload("/api/import/pdfs", "pdf", files).then(async r => { await reload(); const sk = r.skipped || [];
       backfillPages();
-      showModal(`<h2>${icon("up")}Import Finished</h2><div class="body"><p style="margin-top:0"><b>${r.added.length} PDF${r.added.length === 1 ? "" : "s"} added</b> and marked “needs review”. Open each one to fill in the manufacturer, category, storage location and SDS date.</p>
+      showModal(`<h2>${icon("up")}Import Finished</h2><div class="body"><p style="margin-top:0"><b>${r.added.length} PDF${r.added.length === 1 ? "" : "s"} added</b> and marked “needs review”. The manufacturer, SDS date and emergency summary were drafted from each sheet where they could be read. Open each one to check them and add the category and storage location.</p>
         ${sk.length ? `<p><b>${sk.length} skipped:</b></p><div class="box" style="max-height:180px;overflow:auto">${sk.map(x => `<div>${esc(x.name)} ${esc(x.reason)}</div>`).join("")}</div>` : ""}</div>
         <div class="foot"><button class="btn green big" data-act="close">OK</button></div>`); render(); }).catch(e => toast(e.message, true)); }
   else if (t.id === "importzip" && t.files.length) { const f = t.files[0]; t.value = "";
