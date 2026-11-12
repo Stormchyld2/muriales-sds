@@ -32,6 +32,12 @@ import (
 //go:embed ui
 var uiFiles embed.FS
 
+// starter holds the sheets that ship with the program. Each one is copied
+// into the library once, the first time a build that contains it is run.
+//
+//go:embed starter
+var starterFiles embed.FS
+
 const (
 	appID    = "muriales-sds-book"
 	basePort = 47615
@@ -52,6 +58,8 @@ type Product struct {
 	FirstAidSwallowed  string `json:"firstAidSwallowed"`
 	PPE                string `json:"ppe"`
 	Pages              int    `json:"pages"`
+	File               string `json:"file"`    // file name inside the sheets folder
+	Missing            bool   `json:"missing"` // set when the PDF is no longer in the folder
 	AddedAt            string `json:"addedAt"`
 	UpdatedAt          string `json:"updatedAt"`
 }
@@ -59,6 +67,9 @@ type Product struct {
 type Library struct {
 	Categories []string   `json:"categories"`
 	Products   []*Product `json:"products"`
+	// Starter sheets already copied in, so one that a manager removes
+	// does not come back the next time the program opens.
+	StarterApplied []string `json:"starterApplied"`
 }
 
 var defaultCategories = []string{
@@ -75,8 +86,106 @@ type store struct {
 func (s *store) file() string    { return filepath.Join(s.dir, "library.json") }
 func (s *store) pdfDir() string  { return filepath.Join(s.dir, "sheets") }
 func (s *store) goneDir() string { return filepath.Join(s.dir, "removed") }
-func (s *store) pdfPath(id string) string {
-	return filepath.Join(s.pdfDir(), id+".pdf")
+func (s *store) pdfPath(p *Product) string {
+	if p.File == "" { // libraries made by version 1.0 named files by id
+		return filepath.Join(s.pdfDir(), p.ID+".pdf")
+	}
+	return filepath.Join(s.pdfDir(), p.File)
+}
+
+var badFileChars = regexp.MustCompile(`[^A-Za-z0-9 &()_.,'+-]+`)
+
+// fileNameFor picks a readable, unused file name in the sheets folder, so the
+// folder makes sense to a person browsing it in Windows.
+func (s *store) fileNameFor(name string) string {
+	base := strings.Join(strings.Fields(badFileChars.ReplaceAllString(name, " ")), " ")
+	base = strings.Trim(base, " .")
+	if len(base) > 80 {
+		base = strings.TrimSpace(base[:80])
+	}
+	if base == "" {
+		base = "SDS"
+	}
+	for i := 1; ; i++ {
+		candidate := base + ".pdf"
+		if i > 1 {
+			candidate = fmt.Sprintf("%s (%d).pdf", base, i)
+		}
+		if _, err := os.Stat(filepath.Join(s.pdfDir(), candidate)); errors.Is(err, fs.ErrNotExist) {
+			return candidate
+		}
+	}
+}
+
+// applyStarter copies in any sheet that ships with the program and has not
+// been offered to this library before.
+func (s *store) applyStarter() bool {
+	b, err := starterFiles.ReadFile("starter/library.json")
+	if err != nil {
+		return false
+	}
+	var st Library
+	if err := json.Unmarshal(b, &st); err != nil {
+		log.Printf("starter library could not be read: %v", err)
+		return false
+	}
+	applied := map[string]bool{}
+	for _, id := range s.lib.StarterApplied {
+		applied[id] = true
+	}
+	changed := false
+	for _, p := range st.Products {
+		if applied[p.ID] {
+			continue
+		}
+		s.lib.StarterApplied = append(s.lib.StarterApplied, p.ID)
+		changed = true
+		if s.find(p.ID) != nil {
+			continue
+		}
+		pdf, err := starterFiles.ReadFile("starter/sheets/" + p.File)
+		if err != nil {
+			log.Printf("starter sheet %q is missing from the program: %v", p.File, err)
+			continue
+		}
+		p.File = s.fileNameFor(strings.TrimSuffix(p.File, ".pdf"))
+		if err := os.WriteFile(s.pdfPath(p), pdf, 0o644); err != nil {
+			log.Printf("starter sheet %q could not be copied: %v", p.File, err)
+			continue
+		}
+		p.AddedAt, p.UpdatedAt = now(), now()
+		s.lib.Products = append(s.lib.Products, p)
+	}
+	return changed
+}
+
+// scan keeps the library in step with the sheets folder: a PDF that someone
+// copied into the folder by hand becomes a product, and a product whose PDF
+// has gone is flagged. It reports whether the library changed.
+func (s *store) scan() bool {
+	known := map[string]bool{}
+	for _, p := range s.lib.Products {
+		known[strings.ToLower(filepath.Base(s.pdfPath(p)))] = true
+		_, err := os.Stat(s.pdfPath(p))
+		p.Missing = err != nil
+	}
+	entries, err := os.ReadDir(s.pdfDir())
+	if err != nil {
+		return false
+	}
+	changed := false
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.EqualFold(filepath.Ext(name), ".pdf") || known[strings.ToLower(name)] {
+			continue
+		}
+		title := strings.Join(strings.Fields(strings.NewReplacer("_", " ", "-", " ").Replace(strings.TrimSuffix(name, filepath.Ext(name)))), " ")
+		s.lib.Products = append(s.lib.Products, &Product{
+			ID: newID(), Name: title, Category: "Other", File: name, AddedAt: now(), UpdatedAt: now(),
+		})
+		changed = true
+	}
+	return changed
 }
 
 func (s *store) load() error {
@@ -88,6 +197,8 @@ func (s *store) load() error {
 	b, err := os.ReadFile(s.file())
 	if errors.Is(err, fs.ErrNotExist) {
 		s.lib = Library{Categories: defaultCategories, Products: []*Product{}}
+		s.applyStarter()
+		s.scan()
 		return s.save()
 	}
 	if err != nil {
@@ -101,6 +212,10 @@ func (s *store) load() error {
 	}
 	if s.lib.Products == nil {
 		s.lib.Products = []*Product{}
+	}
+	starter := s.applyStarter()
+	if s.scan() || starter {
+		return s.save()
 	}
 	return nil
 }
@@ -136,7 +251,7 @@ var unsafeName = regexp.MustCompile(`[^A-Za-z0-9]+`)
 // retire moves a sheet into the "removed" folder instead of deleting it, so a
 // mistaken removal can always be recovered by hand.
 func (s *store) retire(p *Product) {
-	src := s.pdfPath(p.ID)
+	src := s.pdfPath(p)
 	if _, err := os.Stat(src); err != nil {
 		return
 	}
@@ -144,7 +259,7 @@ func (s *store) retire(p *Product) {
 	if len(name) > 60 {
 		name = name[:60]
 	}
-	dst := filepath.Join(s.goneDir(), fmt.Sprintf("%s_%s_%s.pdf", name, time.Now().Format("2006-01-02_150405"), p.ID[:6]))
+	dst := filepath.Join(s.goneDir(), fmt.Sprintf("%s_%s_%s.pdf", name, time.Now().Format("2006-01-02_150405"), newID()[:6]))
 	if err := os.Rename(src, dst); err != nil {
 		log.Printf("could not move %s to removed folder: %v", src, err)
 	}
@@ -250,6 +365,11 @@ func (s *store) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/library", func(w http.ResponseWriter, r *http.Request) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
+		if s.scan() {
+			if err := s.save(); err != nil {
+				log.Printf("library could not be saved after folder scan: %v", err)
+			}
+		}
 		writeJSON(w, 200, map[string]any{
 			"categories": s.lib.Categories,
 			"products":   s.lib.Products,
@@ -271,7 +391,8 @@ func (s *store) routes(mux *http.ServeMux) {
 		defer s.mu.Unlock()
 		in.ID = newID()
 		in.AddedAt, in.UpdatedAt = now(), now()
-		if err := os.Rename(tmp, s.pdfPath(in.ID)); err != nil {
+		in.File = s.fileNameFor(in.Name)
+		if err := os.Rename(tmp, s.pdfPath(in)); err != nil {
 			os.Remove(tmp)
 			fail(w, 500, "the PDF could not be saved")
 			return
@@ -302,7 +423,8 @@ func (s *store) routes(mux *http.ServeMux) {
 		}
 		if tmp != "" {
 			s.retire(p)
-			if err := os.Rename(tmp, s.pdfPath(p.ID)); err != nil {
+			p.File = s.fileNameFor(in.Name)
+			if err := os.Rename(tmp, s.pdfPath(p)); err != nil {
 				os.Remove(tmp)
 				fail(w, 500, "the new PDF could not be saved")
 				return
@@ -354,7 +476,7 @@ func (s *store) routes(mux *http.ServeMux) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/pdf")
-		http.ServeFile(w, r, s.pdfPath(p.ID))
+		http.ServeFile(w, r, s.pdfPath(p))
 	})
 
 	mux.HandleFunc("POST /api/categories", func(w http.ResponseWriter, r *http.Request) {

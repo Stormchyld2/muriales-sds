@@ -20,13 +20,24 @@ The program is a single `.exe` with no installer. It runs a private server
 that only the same computer can reach and shows its screens in an application
 window using Microsoft Edge, which is part of Windows.
 
-All data stays on the computer, in an `SDS Data` folder next to the program:
+The library is file-first: plain files in a folder, with no SQL or SQLite
+database. All data stays on the computer, in an `SDS Data` folder next to the
+program:
 
 | Path | Contents |
 | --- | --- |
 | `SDS Data/library.json` | Product list and categories |
-| `SDS Data/sheets/` | The SDS PDF files |
+| `SDS Data/sheets/` | The SDS PDF files, under readable names |
 | `SDS Data/removed/` | Removed and replaced PDFs, kept for recovery |
+
+A PDF copied by hand into `SDS Data/sheets/` is picked up as a new product the
+next time the library is shown.
+
+## Starter sheets
+
+Sheets in `starter/` are built into the program. Each is copied into the
+library once, the first time a build containing it runs. To ship another one,
+add its PDF to `starter/sheets/` and its details to `starter/library.json`.
 
 ## Building
 

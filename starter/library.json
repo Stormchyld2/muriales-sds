@@ -1,0 +1,20 @@
+{
+  "products": [
+    {
+      "id": "keystone-greaselift-rtu",
+      "name": "Keystone Greaselift Degreaser & Fryer Cleaner RTU",
+      "manufacturer": "Ecolab Inc. (Keystone)",
+      "category": "Degreasers",
+      "location": "",
+      "revisionDate": "2025-08-13",
+      "hazards": "WARNING. Causes eye irritation.\nEcolab emergency health line: 1-800-328-0026",
+      "firstAidEyes": "Rinse with plenty of water. Remove contact lenses if present and easy to do, and continue rinsing. If irritation persists, get medical attention.",
+      "firstAidSkin": "Rinse with plenty of water.",
+      "firstAidInhalation": "Get medical attention if symptoms occur.",
+      "firstAidSwallowed": "Rinse mouth. Get medical attention if symptoms occur.",
+      "ppe": "No special protective equipment required in normal use. Wash hands thoroughly after handling.",
+      "pages": 8,
+      "file": "Keystone Greaselift Degreaser & Fryer Cleaner RTU.pdf"
+    }
+  ]
+}

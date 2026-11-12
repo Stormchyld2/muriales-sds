@@ -230,7 +230,7 @@ function vLibrary() {
         ${th("name","Product Name")}${th("manufacturer","Manufacturer")}${th("category","Category")}${th("location","Storage Location")}${th("date","SDS Date")}</tr></thead><tbody>
         ${rows.map(p => `<tr class="${state.sel.has(p.id) ? "sel" : ""}" data-act="open" data-id="${p.id}">
           <td><input type="checkbox" data-act="toggle" data-id="${p.id}" ${state.sel.has(p.id) ? "checked" : ""}></td>
-          <td>${esc(p.name)}${hasSummary(p) ? "" : '<span class="tag">summary missing</span>'}</td>
+          <td>${esc(p.name)}${p.missing ? '<span class="tag" style="border-color:#e25a68;color:#ff9aa5">PDF missing</span>' : ""}${hasSummary(p) ? "" : '<span class="tag">summary missing</span>'}</td>
           <td>${esc(p.manufacturer)}</td><td>${esc(p.category)}</td><td>${esc(p.location)}</td><td>${fmtDate(sdsDate(p))}</td></tr>`).join("")}
       </tbody></table>`;
   return `
@@ -353,6 +353,7 @@ function vSettings() {
     <h3 style="margin-top:0">Where the sheets are stored</h3>
     <p>Every PDF and the product list are kept in this folder on this computer:</p>
     <p><code>${esc(state.lib.dataFolder)}</code></p>
+    <p>The library is made of ordinary files, with no database. The PDFs sit in the “sheets” folder under readable names, and the product details are in “library.json”. A PDF copied straight into the “sheets” folder shows up in the library as a new product, ready for its details to be filled in.</p>
     <p class="hint">Removed and replaced sheets are moved into its “removed” folder rather than deleted, so they can be recovered.</p>
     <div class="row"><button class="btn" data-act="open-folder">${icon("folder")}Open Data Folder</button></div>
   </div>
@@ -366,7 +367,7 @@ function vSettings() {
 function vAbout() {
   return `
   <div class="panel" style="max-width:760px">
-    <h3 style="margin-top:0">Muriale's SDS Manager <span class="hint">version 1.0</span></h3>
+    <h3 style="margin-top:0">Muriale's SDS Manager <span class="hint">version 1.1</span></h3>
     <p>Keeps the Safety Data Sheet (SDS, formerly MSDS) library for Muriale's Italian Kitchen and prints the paper SDS book.</p>
     <p>${state.lib.products.length} product${state.lib.products.length === 1 ? "" : "s"} in the library.</p>
     <p><b>Emergency:</b> 911 &nbsp;·&nbsp; <b>Poison Control:</b> 1-800-222-1222</p>
@@ -566,7 +567,7 @@ const saveCats = (categories, renames = {}) => api("/api/categories", {method: "
 
 /* ---------- events ---------- */
 const ACT = {
-  nav(el) { const v = el.dataset.v; if (v === "print") return state.lib.products.length ? printDialog("all") : toast("Add a product first."); if (v === "add") state.form = blankForm(); state.view = v; state.focusQ = false; render(); },
+  nav(el) { const v = el.dataset.v; if (v === "print") return state.lib.products.length ? printDialog("all") : toast("Add a product first."); if (v === "add") state.form = blankForm(); state.view = v; state.focusQ = false; render(); if (v === "library") return reload().then(render); },
   open(el, e) { if (e.target.closest("input")) return; state.view = "detail"; state.id = el.dataset.id; render(); },
   toggle(el) { state.sel.has(el.dataset.id) ? state.sel.delete(el.dataset.id) : state.sel.add(el.dataset.id); render(); },
   selall() { visible().forEach(p => state.sel.add(p.id)); render(); },
