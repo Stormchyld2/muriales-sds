@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Muriale's SDS Manager</title>
+<link rel="icon" href="favicon.png">
+<style>
+:root{--bg:#2c2e33;--panel:#35383e;--panel2:#3d4047;--line:#565a62;--text:#f1f1f1;--mute:#b9bcc2;
+  --wine:#8a1626;--wine2:#5b0c17;--gold:#e0bc6e;--green:#1e7d30;--green2:#145a22;--cream:#f6f1e6}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.4 "Segoe UI",Tahoma,Arial,sans-serif;display:flex;overflow:hidden}
+button,input,select,textarea{font:inherit}
+aside{width:176px;flex:none;background:linear-gradient(#25272b,#1f2125);border-right:1px solid #45484f;display:flex;flex-direction:column;padding:12px 8px}
+aside img{width:150px;margin:2px auto 16px;display:block}
+.nav{display:flex;align-items:center;gap:10px;padding:9px 12px;margin:2px 0;border-radius:6px;color:var(--text);background:none;border:0;cursor:pointer;text-align:left;font-size:14.5px;width:100%}
+.nav:hover{background:#3a3d43}
+.nav.on{background:linear-gradient(var(--wine),var(--wine2));box-shadow:inset 0 0 0 1px #b23a4a55}
+.nav svg,.btn svg{width:18px;height:18px;flex:none}
+main{flex:1;min-width:0;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:16px;padding:12px 20px 10px}
+header h1{font:700 27px Georgia,"Times New Roman",serif;margin:0;letter-spacing:.2px}
+header p{margin:1px 0 0;font-size:15px;color:#e4e4e4}
+.pictos{margin-left:auto;display:flex;gap:10px}
+.pictos svg{width:44px;height:44px}
+.flag{height:3px;background:linear-gradient(90deg,transparent,#1f8a3b 15%,#f4f4f4 50%,#c8202f 85%,transparent)}
+#view{flex:1;min-height:0;padding:14px 20px 16px;display:flex;flex-direction:column;gap:12px;overflow:auto}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;border-radius:6px;border:1px solid #6b6f78;background:linear-gradient(#4a4d55,#3a3d44);color:var(--text);cursor:pointer;font-weight:600;white-space:nowrap}
+.btn:hover{filter:brightness(1.2)}
+.btn:disabled{opacity:.45;cursor:default;filter:none}
+.btn.green{background:linear-gradient(var(--green),var(--green2));border-color:#3aa24e}
+.btn.wine{background:linear-gradient(var(--wine),var(--wine2));border-color:#b23a4a}
+.btn.big{padding:10px 22px;font-size:15px}
+.btn.small{padding:5px 10px;font-weight:500;font-size:13px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+.field{background:#24262a;border:1px solid #6b6f78;border-radius:5px;color:var(--text);padding:7px 10px;width:100%}
+.field:focus{outline:2px solid var(--gold);outline-offset:0}
+.search{position:relative;flex:1;min-width:220px}
+.search svg{position:absolute;left:10px;top:9px;width:17px;height:17px;color:#bbb}
+.search input{padding-left:34px}
+.tablewrap{flex:1;min-height:160px;overflow:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+table{border-collapse:collapse;width:100%}
+th{position:sticky;top:0;background:#3f4249;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:600;cursor:pointer;user-select:none;white-space:nowrap}
+th.nosort{cursor:default;width:38px}
+th .arr{color:var(--gold);font-size:11px;margin-left:4px}
+td{padding:8px 10px;border-bottom:1px solid #45484f}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:#40434a}
+tbody tr.sel{background:linear-gradient(#7d1423,#5b0c17)}
+input[type=checkbox]{width:16px;height:16px;accent-color:#c8a04e;cursor:pointer}
+.tag{font-size:11.5px;border:1px solid #a8862f;color:var(--gold);border-radius:10px;padding:1px 8px;margin-left:8px;white-space:nowrap}
+.empty{padding:48px 20px;text-align:center;color:var(--mute)}
+.empty b{display:block;color:var(--text);font-size:17px;margin-bottom:6px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.bar{background:linear-gradient(var(--wine),var(--wine2));border-radius:5px;padding:7px 14px;font:700 21px "Segoe UI",sans-serif}
+.detail{flex:1;min-height:0;display:grid;grid-template-columns:minmax(360px,5fr) 6fr;gap:12px}
+.detail .left{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:auto}
+.detail iframe{width:100%;height:100%;min-height:340px;border:1px solid var(--line);border-radius:6px;background:#fff}
+dl{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;margin:0}
+dt{font-weight:600}dd{margin:0}
+.poison{background:linear-gradient(#c01f30,#8a1626);border:1px solid #e25a68;border-radius:6px;padding:10px 18px;text-align:center;font-weight:700}
+.poison span{display:block;font-size:14px;font-weight:600}
+.poison strong{font-size:22px;letter-spacing:.5px}
+.sum h3{margin:0 0 2px;font-size:14.5px}
+.sum .blk{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #4a4d55}
+.sum .blk:last-child{border:0}
+.sum svg{width:34px;height:34px;flex:none}
+.sum p{margin:0;white-space:pre-wrap}
+.sum .none{color:var(--mute);font-style:italic}
+.form{display:grid;grid-template-columns:230px 1fr;gap:16px}
+.drop{border:2px dashed #999;border-radius:8px;padding:18px 12px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:190px}
+.drop.over{border-color:var(--gold);background:#3d3a30}
+.drop svg{width:44px;height:44px}
+.drop small{color:var(--mute)}
+.drop .file{color:var(--gold);font-weight:600;word-break:break-word}
+.fields{display:grid;grid-template-columns:150px 1fr;gap:8px 12px;align-items:center}
+.fields label{font-weight:600}
+.fields textarea{resize:vertical;min-height:36px}
+.req{color:#ff6b6b}
+.sect{border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.sect>h2{margin:0;padding:6px 12px;font-size:15px;background:linear-gradient(var(--wine),var(--wine2))}
+.sect>div{padding:12px}
+.hint{color:var(--mute);font-size:13px}
+#modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:20}
+#modal.show{display:flex}
+.dialog{background:var(--cream);color:#1b1b1b;border-radius:8px;width:min(560px,92vw);overflow:hidden;box-shadow:0 20px 60px #000}
+.dialog h2{margin:0;padding:12px 18px;font-size:21px;color:#fff;background:linear-gradient(var(--wine),var(--wine2));display:flex;gap:12px;align-items:center}
+.dialog h2 svg{width:28px;height:28px}
+.dialog .body{padding:16px 20px}
+.dialog .foot{display:flex;gap:14px;justify-content:center;padding:4px 20px 20px}
+.dialog .box{background:#f3dfb0;border:1px solid #d9b56a;border-radius:6px;padding:10px 14px;margin:12px 0}
+.dialog .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.dialog label{display:flex;gap:9px;align-items:center;padding:4px 0;cursor:pointer}
+.dialog label.off{opacity:.45;cursor:default}
+.dialog input[type=radio]{width:16px;height:16px;accent-color:var(--wine)}
+.dialog input[type=checkbox]{accent-color:var(--green)}
+.dialog .field{background:#fff;color:#111}
+.dialog h4{margin:0 0 6px}
+#preview{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:30}
+#preview.show{display:flex}
+#preview .top{display:flex;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)}
+#preview iframe{flex:1;border:0;background:#fff}
+#toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#1f2125;border:1px solid var(--gold);padding:10px 18px;border-radius:6px;display:none;z-index:40;max-width:80vw}
+#toast.err{border-color:#e25a68;background:#3a0d14}
+#lost{position:fixed;top:0;left:0;right:0;background:#c01f30;padding:10px;text-align:center;font-weight:600;display:none;z-index:50}
+.catrow{display:flex;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid #4a4d55}
+.catrow b{flex:1}
+code{background:#1f2125;border:1px solid #565a62;border-radius:4px;padding:2px 6px;word-break:break-all}
+</style>
+</head>
+<body>
+<aside>
+  <img src="logo.png" alt="Muriale's Italian Kitchen">
+  <nav id="nav"></nav>
+</aside>
+<main>
+  <header>
+    <div><h1>Muriale's SDS Manager</h1><p id="subtitle"></p></div>
+    <div class="pictos" id="pictos"></div>
+  </header>
+  <div class="flag"></div>
+  <section id="view"></section>
+</main>
+<div id="modal"></div>
+<div id="preview">
+  <div class="top">
+    <strong id="pvTitle" class="grow"></strong>
+    <span id="pvNote" class="hint"></span>
+    <button class="btn green" data-act="pv-print"></button>
+    <button class="btn" data-act="pv-save"></button>
+    <button class="btn wine" data-act="pv-close"></button>
+  </div>
+  <iframe id="pvFrame" title="Print preview"></iframe>
+</div>
+<div id="toast"></div>
+<div id="lost">Muriale's SDS Manager has stopped. Close this window and open the program again.</div>
+
+<script src="pdf-lib.min.js"></script>
+<script>
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const ICON = {
+  home:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  add:'<path d="M6 2h9l5 5v15H6z"/><path d="M12 11v7M8.5 14.5h7"/>',
+  cats:'<path d="M3 6h7l2 2h9v11H3z"/>',
+  print:'<path d="M7 8V3h10v5"/><rect x="3" y="8" width="18" height="9" rx="1"/><path d="M7 14h10v7H7z"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
+  plus:'<path d="M12 4v16M4 12h16"/>',
+  trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/>',
+  edit:'<path d="M4 20l1-5L16 4l4 4L9 19z"/>',
+  swap:'<path d="M20 11a8 8 0 0 0-14.5-4M4 4v4h4M4 13a8 8 0 0 0 14.5 4M20 20v-4h-4"/>',
+  back:'<path d="M20 12H5M11 5l-7 7 7 7"/>',
+  search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/>',
+  x:'<path d="M5 5l14 14M19 5L5 19"/>',
+  save:'<path d="M4 4h13l3 3v13H4z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/>',
+  up:'<path d="M12 16V5M7 10l5-5 5 5M5 20h14"/>',
+  list:'<path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/>',
+  warn:'<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 17.5v.5"/>',
+  folder:'<path d="M3 6h7l2 2h9v11H3z"/>',
+  down:'<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>',
+};
+const icon = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
+const diamond = inner => `<svg viewBox="0 0 48 48"><path d="M24 2 46 24 24 46 2 24z" fill="#fff" stroke="#d81e2c" stroke-width="3.5" stroke-linejoin="round"/>${inner}</svg>`;
+const PICTO = {
+  flame: diamond('<path d="M24 12c1 5 7 7 7 14a7 7 0 0 1-14 0c0-3 1.500-5 3-6 0 2 1 3 2 3 1-3 0-7 2-11z" fill="#111"/><path d="M15 36h18" stroke="#111" stroke-width="2.5"/>'),
+  bang: diamond('<path d="M24 11c2 0 3 1.500 3 3l-1.700 13h-2.600L21 14c0-1.500 1-3 3-3z" fill="#111"/><circle cx="24" cy="33" r="3" fill="#111"/>'),
+  skull: diamond('<path d="M24 11a9 9 0 0 0-9 9c0 3 1.400 5 3.500 6.500V30h11v-3.500C31.600 25 33 23 33 20a9 9 0 0 0-9-9z" fill="#111"/><circle cx="20.500" cy="20" r="2.300" fill="#fff"/><circle cx="27.500" cy="20" r="2.300" fill="#fff"/><path d="M15 32l18 6M33 32l-18 6" stroke="#111" stroke-width="2.600" stroke-linecap="round"/>'),
+  cross: '<svg viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="5" fill="#c8202f"/><path d="M24 11v26M11 24h26" stroke="#fff" stroke-width="8"/></svg>',
+  ppe: '<svg viewBox="0 0 48 48" fill="none" stroke="#e0bc6e" stroke-width="3"><rect x="4" y="16" width="17" height="14" rx="6"/><rect x="27" y="16" width="17" height="14" rx="6"/><path d="M21 22h6"/></svg>',
+};
+$("#pictos").innerHTML = PICTO.flame + PICTO.bang + PICTO.skull;
+
+const state = { lib: {categories: [], products: [], dataFolder: ""}, sel: new Set(), q: "", cat: "", sort: {key: "name", dir: 1}, view: "library", id: null, form: null };
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "Something went wrong. Please try again.");
+  return j;
+}
+async function reload() {
+  state.lib = await api("/api/library");
+  const ids = new Set(state.lib.products.map(p => p.id));
+  for (const id of [...state.sel]) if (!ids.has(id)) state.sel.delete(id);
+}
+let toastT;
+function toast(msg, err) {
+  const t = $("#toast"); t.textContent = msg; t.className = err ? "err" : ""; t.style.display = "block";
+  clearTimeout(toastT); toastT = setTimeout(() => t.style.display = "none", err ? 7000 : 3500);
+}
+const fmtDate = d => { const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(d || ""); return m ? `${m[2]}/${m[3]}/${m[1]}` : ""; };
+const sdsDate = p => p.revisionDate || (p.updatedAt || "").slice(0, 10);
+const hasSummary = p => [p.hazards, p.firstAidEyes, p.firstAidSkin, p.firstAidInhalation, p.firstAidSwallowed, p.ppe].some(v => (v || "").trim());
+const byId = id => state.lib.products.find(p => p.id === id);
+const longDate = () => new Date().toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"});
+
+function visible() {
+  const q = state.q.trim().toLowerCase();
+  const k = state.sort.key;
+  const val = p => (k === "date" ? sdsDate(p) : p[k] || "").toLowerCase();
+  return state.lib.products
+    .filter(p => (!state.cat || p.category === state.cat) && (!q || (p.name + " " + p.manufacturer).toLowerCase().includes(q)))
+    .sort((a, b) => val(a).localeCompare(val(b)) * state.sort.dir || a.name.localeCompare(b.name));
+}
+
+/* ---------- screens ---------- */
+const NAV = [["library","home","Library"],["add","add","Add SDS"],["categories","cats","Categories"],["print","print","Print / Export"],["settings","gear","Settings"],["about","info","About"]];
+const SUB = {library:"Safety Data Sheet (SDS) Management", detail:"Product Detail / Emergency Quick View", add:"Add / Edit Safety Data Sheet", categories:"Categories", settings:"Settings", about:"About"};
+
+function render() {
+  const active = state.view === "detail" ? "library" : state.view;
+  $("#nav").innerHTML = NAV.map(([v, i, l]) => `<button class="nav ${v === active ? "on" : ""}" data-act="nav" data-v="${v}">${icon(i)}${l}</button>`).join("");
+  $("#subtitle").textContent = SUB[state.view];
+  $("#view").innerHTML = ({library: vLibrary, detail: vDetail, add: vForm, categories: vCats, settings: vSettings, about: vAbout}[state.view])();
+  if (state.view === "library") { const s = $("#q"); if (s && state.focusQ) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }
+}
+
+function vLibrary() {
+  const rows = visible(), total = state.lib.products.length;
+  const th = (key, label) => `<th data-act="sort" data-k="${key}">${label}<span class="arr">${state.sort.key === key ? (state.sort.dir > 0 ? "▲" : "▼") : ""}</span></th>`;
+  const allOn = rows.length > 0 && rows.every(p => state.sel.has(p.id));
+  const body = !total
+    ? `<div class="empty"><b>No safety data sheets yet</b>Click “Add SDS” to add the first product and its PDF.</div>`
+    : !rows.length ? `<div class="empty"><b>No products match</b>Try a different search or category.</div>`
+    : `<table><thead><tr><th class="nosort"><input type="checkbox" data-act="selall-box" ${allOn ? "checked" : ""} title="Select all shown"></th>
+        ${th("name","Product Name")}${th("manufacturer","Manufacturer")}${th("category","Category")}${th("location","Storage Location")}${th("date","SDS Date")}</tr></thead><tbody>
+        ${rows.map(p => `<tr class="${state.sel.has(p.id) ? "sel" : ""}" data-act="open" data-id="${p.id}">
+          <td><input type="checkbox" data-act="toggle" data-id="${p.id}" ${state.sel.has(p.id) ? "checked" : ""}></td>
+          <td>${esc(p.name)}${hasSummary(p) ? "" : '<span class="tag">summary missing</span>'}</td>
+          <td>${esc(p.manufacturer)}</td><td>${esc(p.category)}</td><td>${esc(p.location)}</td><td>${fmtDate(sdsDate(p))}</td></tr>`).join("")}
+      </tbody></table>`;
+  return `
+  <div class="row">
+    <div class="search">${icon("search")}<input id="q" class="field" placeholder="Search by product name or manufacturer..." value="${esc(state.q)}"></div>
+    <label>Category:</label>
+    <select id="cat" class="field" style="width:210px"><option value="">All Categories</option>
+      ${state.lib.categories.map(c => `<option ${c === state.cat ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
+  </div>
+  <div class="tablewrap">${body}</div>
+  <div class="row">
+    <button class="btn small" data-act="selall">${icon("plus")}Select All</button>
+    <button class="btn small" data-act="clear">Clear Selection</button>
+    <span>Selected: ${state.sel.size} of ${total}</span>
+  </div>
+  <div class="row">
+    <button class="btn green big" data-act="nav" data-v="add">${icon("plus")}Add SDS</button>
+    <span class="grow"></span>
+    <button class="btn big" data-act="print" data-scope="selected" ${state.sel.size ? "" : "disabled"}>${icon("list")}Print Selected</button>
+    <button class="btn big" data-act="print" data-scope="all" ${total ? "" : "disabled"}>${icon("print")}Print Entire Book</button>
+    <button class="btn big" data-act="print" data-scope="index" ${total ? "" : "disabled"}>${icon("list")}Print Index</button>
+  </div>`;
+}
+
+function vDetail() {
+  const p = byId(state.id);
+  if (!p) { state.view = "library"; return vLibrary(); }
+  const line = (label, v) => (v || "").trim() ? `<b>${label}:</b> ${esc(v.trim())}\n` : "";
+  const aid = line("Eyes", p.firstAidEyes) + line("Skin", p.firstAidSkin) + line("Inhalation", p.firstAidInhalation) + line("Swallowed", p.firstAidSwallowed);
+  const none = `<p class="none">Not entered yet. Click Edit to add it, or read the full sheet.</p>`;
+  return `
+  <div class="bar">${esc(p.name)}</div>
+  <div class="detail">
+    <div class="left">
+      <div class="row" style="align-items:stretch;flex-wrap:nowrap">
+        <div class="panel grow"><dl>
+          <dt>Manufacturer:</dt><dd>${esc(p.manufacturer) || "—"}</dd>
+          <dt>Category:</dt><dd>${esc(p.category) || "—"}</dd>
+          <dt>Storage Location:</dt><dd>${esc(p.location) || "—"}</dd>
+          <dt>SDS Revision Date:</dt><dd>${fmtDate(p.revisionDate) || "—"}</dd>
+          <dt>Last Updated:</dt><dd>${fmtDate(p.updatedAt)}</dd>
+        </dl></div>
+        <div class="poison"><span>Poison Control</span><strong>1-800-222-1222</strong><span>Emergency: 911</span></div>
+      </div>
+      <div class="panel sum">
+        <div class="blk">${PICTO.bang}<div><h3>Hazard Warnings</h3>${(p.hazards || "").trim() ? `<p>${esc(p.hazards)}</p>` : none}</div></div>
+        <div class="blk">${PICTO.cross}<div><h3>First Aid</h3>${aid ? `<p>${aid}</p>` : none}</div></div>
+        <div class="blk">${PICTO.ppe}<div><h3>Protective Equipment (PPE)</h3>${(p.ppe || "").trim() ? `<p>${esc(p.ppe)}</p>` : none}</div></div>
+      </div>
+    </div>
+    <iframe src="/pdf/${p.id}?v=${encodeURIComponent(p.updatedAt)}#view=FitH" title="Safety data sheet"></iframe>
+  </div>
+  <div class="row">
+    <button class="btn" data-act="print-one">${icon("print")}Print This Sheet</button>
+    <button class="btn" data-act="edit">${icon("edit")}Edit</button>
+    <button class="btn" data-act="edit" data-pick="1">${icon("swap")}Replace PDF</button>
+    <button class="btn wine" data-act="remove">${icon("trash")}Remove</button>
+    <span class="grow"></span>
+    <button class="btn" data-act="nav" data-v="library">${icon("back")}Back to Library</button>
+  </div>`;
+}
+
+function blankForm() { return {id: null, name: "", manufacturer: "", category: state.lib.categories[0] || "Other", location: "", revisionDate: "", hazards: "", firstAidEyes: "", firstAidSkin: "", firstAidInhalation: "", firstAidSwallowed: "", ppe: "", pages: 0, file: null, fileNote: ""}; }
+
+function vForm() {
+  const f = state.form || (state.form = blankForm());
+  const inp = (k, ph = "") => `<input class="field" data-f="${k}" value="${esc(f[k])}" placeholder="${ph}">`;
+  const ta = (k, ph) => `<textarea class="field" rows="1" data-f="${k}" placeholder="${ph}">${esc(f[k])}</textarea>`;
+  const fileText = f.file ? `<span class="file">${esc(f.file.name)}</span><small>${esc(f.fileNote)}</small>`
+    : f.id ? `<small>Current PDF is kept.<br>Drop a new PDF here only to replace it.</small>`
+    : `<small>Drag and drop a PDF file here<br>or click Browse...</small>`;
+  return `
+  <div class="form">
+    <div class="drop" id="drop" data-act="browse">${icon("up")}<b>${f.id ? "Replace SDS PDF" : "Upload SDS PDF"}${f.id ? "" : ' <span class="req">*</span>'}</b>${fileText}
+      <button class="btn small" type="button">Browse...</button>
+      <input type="file" id="file" accept="application/pdf,.pdf" hidden></div>
+    <div class="fields">
+      <label>Product Name: <span class="req">*</span></label>${inp("name")}
+      <label>Manufacturer:</label>${inp("manufacturer", "e.g. Ecolab, Sysco, Keystone")}
+      <label>Category:</label><select class="field" data-f="category">${state.lib.categories.map(c => `<option ${c === f.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
+      <label>Storage Location:</label>${inp("location", "e.g. Dish Room, Janitorial Closet")}
+      <label>SDS Revision Date:</label><input type="date" class="field" data-f="revisionDate" value="${esc(f.revisionDate)}" style="width:190px">
+    </div>
+  </div>
+  <div class="sect"><h2>Emergency Summary (At-a-Glance)</h2><div>
+    <p class="hint" style="margin:0 0 10px">Optional. Copy the key points from the sheet: Section 2 (hazards), Section 4 (first aid) and Section 8 (protective equipment). You can save now and fill this in later.</p>
+    <div class="fields">
+      <label>Hazards:</label>${ta("hazards", "e.g. Causes serious eye irritation. May cause skin irritation.")}
+      <label>First Aid — Eyes:</label>${ta("firstAidEyes", "e.g. Rinse with water for at least 15 minutes.")}
+      <label>First Aid — Skin:</label>${ta("firstAidSkin", "e.g. Wash with soap and water.")}
+      <label>First Aid — Inhalation:</label>${ta("firstAidInhalation", "e.g. Move to fresh air.")}
+      <label>First Aid — Swallowed:</label>${ta("firstAidSwallowed", "e.g. Rinse mouth. Do NOT induce vomiting. Call Poison Control.")}
+      <label>Protective Equipment:</label>${ta("ppe", "e.g. Chemical-resistant gloves, safety goggles.")}
+    </div></div></div>
+  <div class="row" style="justify-content:center">
+    <button class="btn green big" data-act="save">${icon("save")}Save</button>
+    <button class="btn wine big" data-act="cancel">${icon("x")}Cancel</button>
+  </div>`;
+}
+
+function vCats() {
+  const count = c => state.lib.products.filter(p => p.category === c).length;
+  const cs = state.lib.categories;
+  return `
+  <div class="panel" style="max-width:720px">
+    <p class="hint" style="margin-top:0">Categories group the library and set the order of sections in the printed book. “Other” always stays, and products from a removed category move into it.</p>
+    ${cs.map((c, i) => `<div class="catrow"><b>${esc(c)}</b><span class="hint">${count(c)} product${count(c) === 1 ? "" : "s"}</span>
+      <button class="btn small" data-act="cat-move" data-i="${i}" data-d="-1" ${i === 0 || c === "Other" ? "disabled" : ""} title="Move up">▲</button>
+      <button class="btn small" data-act="cat-move" data-i="${i}" data-d="1" ${i >= cs.length - 2 || c === "Other" ? "disabled" : ""} title="Move down">▼</button>
+      <button class="btn small" data-act="cat-rename" data-i="${i}" ${c === "Other" ? "disabled" : ""}>Rename</button>
+      <button class="btn small wine" data-act="cat-remove" data-i="${i}" ${c === "Other" ? "disabled" : ""}>Remove</button></div>`).join("")}
+    <div class="row" style="margin-top:14px"><input id="newcat" class="field grow" placeholder="New category name" maxlength="40">
+      <button class="btn green" data-act="cat-add">${icon("plus")}Add Category</button></div>
+  </div>`;
+}
+
+function vSettings() {
+  return `
+  <div class="panel" style="max-width:760px">
+    <h3 style="margin-top:0">Where the sheets are stored</h3>
+    <p>Every PDF and the product list are kept in this folder on this computer:</p>
+    <p><code>${esc(state.lib.dataFolder)}</code></p>
+    <p class="hint">Removed and replaced sheets are moved into its “removed” folder rather than deleted, so they can be recovered.</p>
+    <div class="row"><button class="btn" data-act="open-folder">${icon("folder")}Open Data Folder</button></div>
+  </div>
+  <div class="panel" style="max-width:760px">
+    <h3 style="margin-top:0">Backup</h3>
+    <p>Creates one zip file containing the whole library in the “SDS Backups” folder next to the program. Copy it to a USB drive or cloud folder so the library survives if this computer fails.</p>
+    <div class="row"><button class="btn green" data-act="backup">${icon("down")}Create Backup</button></div>
+  </div>`;
+}
+
+function vAbout() {
+  return `
+  <div class="panel" style="max-width:760px">
+    <h3 style="margin-top:0">Muriale's SDS Manager <span class="hint">version 1.0</span></h3>
+    <p>Keeps the Safety Data Sheet (SDS, formerly MSDS) library for Muriale's Italian Kitchen and prints the paper SDS book.</p>
+    <p>${state.lib.products.length} product${state.lib.products.length === 1 ? "" : "s"} in the library.</p>
+    <p><b>Emergency:</b> 911 &nbsp;·&nbsp; <b>Poison Control:</b> 1-800-222-1222</p>
+    <p class="hint">The emergency summaries are typed in by a manager as a quick reference. The manufacturer's sheet is always the authority.</p>
+  </div>`;
+}
+
+/* ---------- dialogs ---------- */
+function closeModal() { $("#modal").className = ""; $("#modal").innerHTML = ""; }
+function showModal(html) { $("#modal").innerHTML = `<div class="dialog">${html}</div>`; $("#modal").className = "show"; }
+
+function removeDialog(p) {
+  showModal(`<h2>${icon("warn")}Remove SDS</h2><div class="body">
+    <p style="margin-top:0">Are you sure you want to remove this product from the SDS library?</p>
+    <div class="box"><dl><dt>Product:</dt><dd>${esc(p.name)}</dd><dt>Manufacturer:</dt><dd>${esc(p.manufacturer) || "—"}</dd><dt>Category:</dt><dd>${esc(p.category) || "—"}</dd></dl></div>
+    <p>The product leaves the library and the printed book. Its PDF is moved to the “removed” folder in case it is needed again.</p></div>
+    <div class="foot"><button class="btn wine big" data-act="remove-yes">${icon("trash")}Remove</button><button class="btn big" data-act="close">Cancel</button></div>`);
+}
+
+const INDEX_ROWS_FIRST = 33, INDEX_ROWS_NEXT = 38;
+let printOpt = {scope: "all", cover: true, index: true, dividers: true, numbers: false, only: null};
+function printItems() {
+  if (printOpt.only) return [byId(printOpt.only)].filter(Boolean);
+  const src = printOpt.scope === "selected" ? state.lib.products.filter(p => state.sel.has(p.id)) : state.lib.products;
+  const order = c => { const i = state.lib.categories.indexOf(c); return i < 0 ? 999 : i; };
+  return [...src].sort((a, b) => order(a.category) - order(b.category) || a.name.localeCompare(b.name));
+}
+function estimate() {
+  const items = printItems(), o = printOpt;
+  const idx = n => n <= INDEX_ROWS_FIRST ? 1 : 1 + Math.ceil((n - INDEX_ROWS_FIRST) / INDEX_ROWS_NEXT);
+  if (o.scope === "index") return {n: items.length, pages: idx(items.length)};
+  let pages = items.reduce((s, p) => s + (p.pages || 0), 0);
+  if (o.cover) pages++;
+  if (o.index) pages += idx(items.length);
+  if (o.dividers) pages += new Set(items.map(p => p.category)).size;
+  return {n: items.length, pages, unknown: items.some(p => !p.pages)};
+}
+function printDialog(scope) {
+  printOpt = {...printOpt, scope, only: null};
+  if (scope === "selected" && !state.sel.size) printOpt.scope = "all";
+  drawPrintDialog();
+}
+function drawPrintDialog() {
+  const o = printOpt, e = estimate(), idxOnly = o.scope === "index";
+  const radio = (v, label, off) => `<label class="${off ? "off" : ""}"><input type="radio" name="scope" value="${v}" ${o.scope === v ? "checked" : ""} ${off ? "disabled" : ""}>${label}</label>`;
+  const box = (k, label) => `<label class="${idxOnly ? "off" : ""}"><input type="checkbox" data-o="${k}" ${o[k] ? "checked" : ""} ${idxOnly ? "disabled" : ""}>${label}</label>`;
+  showModal(`<h2>${icon("print")}Print SDS Book</h2><div class="body">
+    <div class="cols"><div><h4>What Would You Like to Print?</h4>
+      ${radio("all", `Entire Book (all ${state.lib.products.length} SDS sheets)`)}
+      ${radio("selected", `Selected Sheets Only (${state.sel.size} product${state.sel.size === 1 ? "" : "s"})`, !state.sel.size)}
+      ${radio("index", "Index Only")}</div>
+    <div><h4>Include in Printout</h4>
+      ${box("cover", "Cover Page (Muriale's Logo)")}${box("index", "Index of Chemicals")}${box("dividers", "Category Divider Pages")}${box("numbers", "Page Numbers")}</div></div>
+    <div class="box"><b>Print Summary</b><br>Products: ${e.n} &nbsp;&nbsp;&nbsp; Estimated Pages: ${e.pages}${e.unknown ? "+" : ""}
+      <br><span style="font-size:13px">${idxOnly ? "(Index pages only)" : "(Includes everything ticked above and all SDS sheets)"}</span></div>
+    <p id="busy" style="margin:0;min-height:20px;font-weight:600"></p></div>
+    <div class="foot"><button class="btn green big" data-act="print-go" ${e.n ? "" : "disabled"}>${icon("print")}Print</button><button class="btn big" data-act="close">${icon("x")}Cancel</button></div>`);
+}
+
+/* ---------- building the printed book ---------- */
+const {PDFDocument, StandardFonts, rgb} = PDFLib;
+const WINE = rgb(0.48, 0.07, 0.13), GOLD = rgb(0.72, 0.56, 0.22), INK = rgb(0.1, 0.1, 0.1), GREY = rgb(0.45, 0.45, 0.45);
+// The built-in PDF fonts only hold basic Latin characters, so anything else is swapped out.
+const clean = s => String(s ?? "").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, "-").replace(/®|™/g, "").replace(/\s+/g, " ").replace(/[^\x20-\x7E\xA1-\xFF]/g, "?").trim();
+function fit(text, font, size, max) {
+  let t = clean(text);
+  if (font.widthOfTextAtSize(t, size) <= max) return t;
+  while (t.length > 1 && font.widthOfTextAtSize(t + "...", size) > max) t = t.slice(0, -1);
+  return t.trimEnd() + "...";
+}
+const centre = (page, text, font, size, y, color = INK) => page.drawText(text, {x: (page.getWidth() - font.widthOfTextAtSize(text, size)) / 2, y, size, font, color});
+
+async function buildBook(opt, progress = () => {}) {
+  const items = opt.items, out = await PDFDocument.create();
+  const F = {r: await out.embedFont(StandardFonts.Helvetica), b: await out.embedFont(StandardFonts.HelveticaBold), t: await out.embedFont(StandardFonts.TimesRomanBold)};
+  const logo = await out.embedPng(await (await fetch("logo.png")).arrayBuffer());
+  const W = 612, H = 792, today = longDate(), failed = [];
+  out.setTitle("Muriale's SDS Book - " + today); out.setAuthor("Muriale's Italian Kitchen");
+
+  if (opt.cover) {
+    const pg = out.addPage([W, H]);
+    pg.drawRectangle({x: 30, y: 30, width: W - 60, height: H - 60, borderColor: GOLD, borderWidth: 2.5});
+    pg.drawRectangle({x: 38, y: 38, width: W - 76, height: H - 76, borderColor: GOLD, borderWidth: 0.8});
+    const lw = 400, lh = lw * logo.height / logo.width;
+    pg.drawImage(logo, {x: (W - lw) / 2, y: 470, width: lw, height: lh});
+    pg.drawRectangle({x: 38, y: 358, width: W - 76, height: 70, color: WINE});
+    centre(pg, "SAFETY DATA SHEETS", F.t, 38, 380, rgb(1, 1, 1));
+    centre(pg, "Printed: " + today, F.b, 15, 318);
+    centre(pg, items.length + " product" + (items.length === 1 ? "" : "s") + " in this book", F.r, 12, 296, GREY);
+    centre(pg, "Emergency: 911     Poison Control: 1-800-222-1222", F.b, 14, 96, WINE);
+  }
+
+  if (opt.index) {
+    const cols = [["#", 24], ["Product Name", 170], ["Manufacturer", 104], ["Category", 88], ["Storage Location", 90], ["SDS Date", 64]];
+    const X = 36, RH = 18;
+    let pg, y, n = 0;
+    const head = first => {
+      pg = out.addPage([W, H]);
+      if (first) {
+        const lw = 128, lh = lw * logo.height / logo.width;
+        pg.drawImage(logo, {x: X, y: H - 40 - lh, width: lw, height: lh});
+        pg.drawText("Muriale's SDS Book Index", {x: 184, y: H - 74, size: 22, font: F.t, color: INK});
+        for (const [i, t] of ["Safety Data Sheets Index", "Printed: " + today].entries())
+          pg.drawText(t, {x: W - X - F.r.widthOfTextAtSize(t, 9), y: H - 56 - i * 12, size: 9, font: F.r, color: INK});
+        y = H - 122;
+      } else y = H - 50;
+      pg.drawRectangle({x: X, y: y - 5, width: W - 2 * X, height: RH, color: WINE});
+      let x = X;
+      for (const [label, w] of cols) { pg.drawText(label, {x: x + 4, y, size: 9, font: F.b, color: rgb(1, 1, 1)}); x += w; }
+      y -= RH;
+    };
+    head(true);
+    for (const p of items) {
+      if (y < 50) head(false);
+      n++;
+      if (n % 2 === 0) pg.drawRectangle({x: X, y: y - 5, width: W - 2 * X, height: RH, color: rgb(0.95, 0.94, 0.91)});
+      pg.drawLine({start: {x: X, y: y - 5}, end: {x: W - X, y: y - 5}, thickness: 0.4, color: rgb(0.7, 0.7, 0.7)});
+      let x = X;
+      for (const [i, v] of [String(n), p.name, p.manufacturer, p.category, p.location, fmtDate(sdsDate(p))].entries()) {
+        pg.drawText(fit(v, F.r, 9, cols[i][1] - 7), {x: x + 4, y, size: 9, font: F.r, color: INK}); x += cols[i][1];
+      }
+      y -= RH;
+    }
+  }
+
+  if (!opt.indexOnly) {
+    let last = null, done = 0;
+    for (const p of items) {
+      progress(`Adding sheet ${++done} of ${items.length}...`);
+      if (opt.dividers && p.category !== last) {
+        last = p.category;
+        const pg = out.addPage([W, H]), inSect = items.filter(q => q.category === last);
+        pg.drawRectangle({x: 0, y: 500, width: W, height: 84, color: WINE});
+        const title = fit(last || "Other", F.t, 38, W - 80);
+        centre(pg, title, F.t, 38, 530, rgb(1, 1, 1));
+        centre(pg, inSect.length + " product" + (inSect.length === 1 ? "" : "s"), F.b, 13, 468, GREY);
+        inSect.slice(0, 24).forEach((q, i) => centre(pg, fit(q.name, F.r, 12, W - 120), F.r, 12, 438 - i * 17));
+      }
+      try {
+        const r = await fetch("/pdf/" + p.id); if (!r.ok) throw new Error("missing");
+        const src = await PDFDocument.load(await r.arrayBuffer(), {ignoreEncryption: true});
+        (await out.copyPages(src, src.getPageIndices())).forEach(x => out.addPage(x));
+      } catch (e) { failed.push(p.name); }
+    }
+  }
+
+  if (opt.numbers) {
+    const pages = out.getPages();
+    pages.forEach((pg, i) => {
+      if (i === 0 && opt.cover) return;
+      try { const t = `Page ${i + 1} of ${pages.length}`, box = pg.getCropBox();
+        pg.drawText(t, {x: box.x + box.width - F.r.widthOfTextAtSize(t, 8) - 24, y: box.y + 12, size: 8, font: F.r, color: GREY}); } catch (e) {}
+    });
+  }
+  return {bytes: await out.save(), pages: out.getPageCount(), failed};
+}
+
+let pv = {url: null, name: ""};
+async function runPrint() {
+  const o = printOpt, items = printItems(), single = !!o.only, idxOnly = o.scope === "index" && !single;
+  const busy = $("#busy"); const say = t => { if (busy) busy.textContent = t; };
+  say("Preparing the pages...");
+  const book = await buildBook({items, cover: !single && !idxOnly && o.cover, index: idxOnly || (!single && o.index), dividers: !single && !idxOnly && o.dividers, numbers: !single && !idxOnly && o.numbers, indexOnly: idxOnly}, say);
+  closeModal();
+  if (pv.url) URL.revokeObjectURL(pv.url);
+  pv.url = URL.createObjectURL(new Blob([book.bytes], {type: "application/pdf"}));
+  pv.name = (single ? items[0].name + " SDS" : idxOnly ? "Muriales SDS Index" : "Muriales SDS Book") + " " + new Date().toISOString().slice(0, 10) + ".pdf";
+  $("#pvTitle").textContent = (single ? items[0].name : idxOnly ? "SDS Index" : "SDS Book") + " — " + book.pages + " page" + (book.pages === 1 ? "" : "s");
+  $("#pvNote").textContent = "Check the pages, then click Print.";
+  $("#pvFrame").src = pv.url;
+  $("#preview").className = "show";
+  if (book.failed.length) toast("These sheets could not be added and must be printed separately: " + book.failed.join(", "), true);
+}
+
+/* ---------- form helpers ---------- */
+async function takeFile(file) {
+  const f = state.form;
+  if (!file) return;
+  if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") return toast("That file is not a PDF.", true);
+  f.file = file; f.pages = 0; f.fileNote = "";
+  try { f.pages = (await PDFDocument.load(await file.arrayBuffer(), {ignoreEncryption: true})).getPageCount(); f.fileNote = f.pages + " page" + (f.pages === 1 ? "" : "s"); }
+  catch (e) { f.fileNote = "Page count could not be read"; }
+  if (!f.name.trim()) f.name = file.name.replace(/\.pdf$/i, "").replace(/[_-]+/g, " ").replace(/\s*\b(sds|msds)\b\s*/ig, " ").trim();
+  render();
+}
+async function saveForm() {
+  const f = state.form;
+  if (!f.name.trim()) return toast("Enter the product name.", true);
+  if (!f.id && !f.file) return toast("Choose the SDS PDF for this product.", true);
+  const {file, fileNote, id, ...meta} = f;
+  const fd = new FormData(); fd.append("meta", JSON.stringify(meta)); if (file) fd.append("pdf", file);
+  const p = await api(id ? "/api/products/" + id : "/api/products", {method: "POST", body: fd});
+  await reload(); state.form = null; state.view = "detail"; state.id = p.id; render();
+  toast(id ? "Changes saved." : "SDS added to the library.");
+}
+const saveCats = (categories, renames = {}) => api("/api/categories", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({categories, renames})}).then(reload).then(render);
+
+/* ---------- events ---------- */
+const ACT = {
+  nav(el) { const v = el.dataset.v; if (v === "print") return state.lib.products.length ? printDialog("all") : toast("Add a product first."); if (v === "add") state.form = blankForm(); state.view = v; state.focusQ = false; render(); },
+  open(el, e) { if (e.target.closest("input")) return; state.view = "detail"; state.id = el.dataset.id; render(); },
+  toggle(el) { state.sel.has(el.dataset.id) ? state.sel.delete(el.dataset.id) : state.sel.add(el.dataset.id); render(); },
+  selall() { visible().forEach(p => state.sel.add(p.id)); render(); },
+  "selall-box"(el) { visible().forEach(p => el.checked ? state.sel.add(p.id) : state.sel.delete(p.id)); render(); },
+  clear() { state.sel.clear(); render(); },
+  sort(el) { const k = el.dataset.k; state.sort = {key: k, dir: state.sort.key === k ? -state.sort.dir : 1}; render(); },
+  print(el) { printDialog(el.dataset.scope); },
+  "print-go"(el) { el.disabled = true; return runPrint(); },
+  "print-one"() { printOpt = {...printOpt, only: state.id}; showModal(`<h2>${icon("print")}Print This Sheet</h2><div class="body"><p id="busy" style="font-weight:600">Preparing the pages...</p></div>`); return runPrint().catch(e => { closeModal(); throw e; }); },
+  edit(el) { const p = byId(state.id); state.form = {...blankForm(), ...p}; state.view = "add"; render(); if (el.dataset.pick) $("#file").click(); },
+  remove() { removeDialog(byId(state.id)); },
+  async "remove-yes"() { const p = byId(state.id); await api("/api/products/" + state.id, {method: "DELETE"}); closeModal(); await reload(); state.view = "library"; render(); toast(`“${p.name}” was removed.`); },
+  close: closeModal,
+  browse(el, e) { if (e.target.id !== "file") $("#file").click(); },
+  save: saveForm,
+  cancel() { const id = state.form && state.form.id; state.form = null; state.view = id ? "detail" : "library"; render(); },
+  "cat-add"() { const v = $("#newcat").value.trim(); if (!v) return; const c = state.lib.categories; if (c.some(x => x.toLowerCase() === v.toLowerCase())) return toast("That category already exists.", true); return saveCats([...c.slice(0, -1), v, "Other"]); },
+  "cat-move"(el) { const c = [...state.lib.categories], i = +el.dataset.i, j = i + +el.dataset.d; [c[i], c[j]] = [c[j], c[i]]; return saveCats(c); },
+  "cat-remove"(el) { const c = [...state.lib.categories], [gone] = c.splice(+el.dataset.i, 1); if (state.cat === gone) state.cat = ""; return saveCats(c); },
+  "cat-rename"(el) { const old = state.lib.categories[+el.dataset.i];
+    showModal(`<h2>${icon("edit")}Rename Category</h2><div class="body"><input id="rename" class="field" value="${esc(old)}" maxlength="40" data-old="${esc(old)}"></div><div class="foot"><button class="btn green big" data-act="cat-rename-go">Save</button><button class="btn big" data-act="close">Cancel</button></div>`); $("#rename").select(); },
+  "cat-rename-go"() { const el = $("#rename"), old = el.dataset.old, v = el.value.trim(); if (!v || v === old) return closeModal(); const c = state.lib.categories; if (c.some(x => x !== old && x.toLowerCase() === v.toLowerCase())) return toast("That category already exists.", true); closeModal(); if (state.cat === old) state.cat = v; return saveCats(c.map(x => x === old ? v : x), {[old]: v}); },
+  "open-folder"() { return api("/api/open-folder", {method: "POST"}); },
+  async backup() { const r = await api("/api/backup", {method: "POST"}); toast("Backup created: " + r.file); },
+  "pv-print"() { try { $("#pvFrame").contentWindow.focus(); $("#pvFrame").contentWindow.print(); } catch (e) { toast("Use the printer button in the top right corner of the preview.", true); } },
+  "pv-save"() { const a = document.createElement("a"); a.href = pv.url; a.download = pv.name; a.click(); },
+  "pv-close"() { $("#preview").className = ""; $("#pvFrame").src = "about:blank"; },
+};
+$('[data-act="pv-print"]').innerHTML = icon("print") + "Print";
+$('[data-act="pv-save"]').innerHTML = icon("down") + "Save as PDF";
+$('[data-act="pv-close"]').innerHTML = icon("x") + "Close";
+
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-act]"); if (!el || el.disabled) return;
+  const act = e.target.closest("input[data-act]") ? e.target.dataset.act : el.dataset.act;
+  const target = e.target.closest("input[data-act]") || el;
+  Promise.resolve().then(() => ACT[act](target, e)).catch(err => { toast(err.message || String(err), true); if (act === "print-go") drawPrintDialog(); });
+});
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.id === "q") { state.q = t.value; state.focusQ = true; render(); }
+  else if (t.dataset.f && state.form) state.form[t.dataset.f] = t.value;
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "cat") { state.cat = t.value; state.focusQ = false; render(); }
+  else if (t.id === "file") takeFile(t.files[0]);
+  else if (t.name === "scope") { printOpt.scope = t.value; drawPrintDialog(); }
+  else if (t.dataset.o) { printOpt[t.dataset.o] = t.checked; drawPrintDialog(); }
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#modal").className) closeModal(); if (e.key === "Enter" && e.target.id === "newcat") ACT["cat-add"](); if (e.key === "Enter" && e.target.id === "rename") ACT["cat-rename-go"](); });
+for (const ev of ["dragover", "dragleave", "drop"]) document.addEventListener(ev, e => {
+  if (state.view !== "add") { if (ev !== "dragleave") e.preventDefault(); return; }
+  e.preventDefault(); const d = $("#drop"); if (d) d.classList.toggle("over", ev === "dragover");
+  if (ev === "drop" && e.dataTransfer.files[0]) takeFile(e.dataTransfer.files[0]);
+});
+
+let misses = 0;
+setInterval(() => fetch("/api/ping").then(r => { if (!r.ok) throw 0; misses = 0; $("#lost").style.display = "none"; }).catch(() => { if (++misses >= 2) $("#lost").style.display = "block"; }), 15000);
+fetch("/api/ping");
+reload().then(render).catch(e => toast(e.message, true));
+</script>
+</body>
+</html>
