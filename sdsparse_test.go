@@ -139,3 +139,40 @@ func TestExtractEndpoints(t *testing.T) {
 		t.Fatalf("unreadable PDF should come back as a friendly message: %d %v", code, out)
 	}
 }
+
+func TestPictogramsAndHazardsAcrossLayouts(t *testing.T) {
+	wrap := func(s2 string) *Draft {
+		return draftFromText([]string{"SECTION 2. HAZARDS IDENTIFICATION\n" + s2 + "\nSECTION 3. COMPOSITION\nx\nSECTION 4. FIRST AID MEASURES\nIf in eyes: rinse.\nSECTION 5. FIRE"})
+	}
+	cases := []struct{ name, s2, picts, hazContains string }{
+		{"classes and aquatic", "Skin corrosion : Category 1B\nSerious eye damage : Category 1\nAcute aquatic toxicity : Category 1\nSignal Word : Danger", "corrosive,environment", ""},
+		{"abbreviated classes", "2.1 Classification\nSkin Corr. 1B; Eye Dam. 1; Aquatic Acute 1\nSignal word: DANGER", "corrosive,environment", ""},
+		{"pictogram words", "Pictogram(s): Corrosion, Exclamation mark\nSignal word: Danger", "corrosive,bang", ""},
+		{"flame over circle", "Pictogram: Flame over circle\nSignal word: Danger", "oxidizer", ""},
+		{"classification table", "Skin irritation Category 2\nEye irritation Category 2A\nSpecific target organ toxicity - single exposure Category 3\nSignal word: Warning", "bang", ""},
+		{"codes only", "Hazard statements: H315, H319, H335\nSignal word: Warning", "bang", "Causes skin irritation. Causes serious eye irritation. May cause respiratory irritation."},
+		{"not classified", "Acute toxicity : Not classified\nSkin corrosion : Not classified\nSignal word: No signal word", "", ""},
+		{"eye irritation 2B", "Eye irritation : Category 2B\nSignal Word : Warning\nHazard Statements : Causes eye irritation.", "", "Causes eye irritation."},
+	}
+	for _, c := range cases {
+		d := wrap(c.s2)
+		if got := strings.Join(d.Pictograms, ","); got != c.picts {
+			t.Errorf("%s: pictograms %q, want %q", c.name, got, c.picts)
+		}
+		if c.hazContains != "" && !strings.Contains(d.Hazards, c.hazContains) {
+			t.Errorf("%s: hazards %q, want it to contain %q", c.name, d.Hazards, c.hazContains)
+		}
+	}
+}
+
+func TestLocationsMigrate(t *testing.T) {
+	s := &store{}
+	s.lib.Locations = append([]string{}, oldDefaultLocations...)
+	if !s.migrateLocations() || s.lib.Locations[0] != "Drystock" || len(s.lib.Locations) != 6 {
+		t.Errorf("old default list should become the new one: %v", s.lib.Locations)
+	}
+	s.lib.Locations = []string{"Dish Room", "Walk-in"}
+	if s.migrateLocations() || len(s.lib.Locations) != 2 {
+		t.Error("a customised list must not be replaced")
+	}
+}

@@ -470,16 +470,33 @@ function vCats() {
   </div>`;
 }
 
-const TABS = [["storage","Storage"],["backup","Backup &amp; Restore"],["transfer","Import &amp; Export"],["cleanup","Clean Up"],["recovery","Recovery"],["diagnostics","Diagnostics"]];
+const TABS = [["storage","Library Folder"],["areas","Storage Areas"],["backup","Backup &amp; Restore"],["transfer","Import &amp; Export"],["cleanup","Clean Up"],["recovery","Recovery"],["diagnostics","Diagnostics"]];
 function loadTab() { if (state.view !== "settings") return; const f = {backup: loadBackups, recovery: loadRecovery, diagnostics: loadDiag}[state.tab]; if (f) f(); }
 async function loadBackups() { state.backups = await api("/api/backups"); if (state.view === "settings") render(); }
 async function loadRecovery() { state.rec = await api("/api/recovery"); if (state.view === "settings" && state.tab === "recovery") render(); }
 async function loadDiag() { state.diag = await api("/api/diagnostics"); if (state.view === "settings" && state.tab === "diagnostics") render(); }
 function vSettings() {
   const tabs = `<div class="tabs">${TABS.map(([k, l]) => `<button class="${state.tab === k ? "on" : ""}" data-act="tab" data-t="${k}">${l}</button>`).join("")}</div>`;
-  const body = ({storage: tStorage, backup: tBackup, transfer: tTransfer, cleanup: tCleanup, recovery: tRecovery, diagnostics: tDiag}[state.tab] || tStorage)();
+  const body = ({storage: tStorage, areas: tAreas, backup: tBackup, transfer: tTransfer, cleanup: tCleanup, recovery: tRecovery, diagnostics: tDiag}[state.tab] || tStorage)();
   return tabs + body;
 }
+function tAreas() {
+  const list = state.lib.locations || [], count = n => state.lib.products.filter(p => (p.location || "").trim().toLowerCase() === n.toLowerCase()).length;
+  const known = new Set(list.map(x => x.toLowerCase()));
+  const extra = [...new Set(state.lib.products.map(p => (p.location || "").trim()).filter(l => l && !known.has(l.toLowerCase())))];
+  return `
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Storage areas</h3>
+    <p class="hint">The places chemicals are kept. They appear in the Storage Location list when adding or editing a sheet, and in the printed index. Renaming an area updates every product stored there. An area with products in it can't be removed until they are moved.</p>
+    ${list.length ? list.map((l, i) => { const n = count(l); return `<div class="catrow"><div class="grow"><b>${esc(l)}</b><div class="hint">${n ? n + " product" + (n === 1 ? "" : "s") + " stored here" : "No products"}</div></div>
+      <button class="btn small" data-act="area-rename" data-i="${i}">${icon("edit")}Rename</button>
+      <button class="btn small wine" data-act="area-remove" data-i="${i}" ${n ? "disabled title=\"Move the products out of this area first\"" : ""}>${icon("trash")}Remove</button></div>`; }).join("") : `<p class="hint">No storage areas yet.</p>`}
+    <div class="row" style="margin-top:10px"><input id="newarea" class="field" style="max-width:300px" maxlength="60" placeholder="New storage area, e.g. Walk-in Cooler"><button class="btn green" data-act="area-add">${icon("plus")}Add Area</button></div>
+  </div>
+  ${extra.length ? `<div class="panel" style="max-width:860px"><h3 style="margin-top:0">Areas typed in on sheets</h3><p class="hint">These were typed into products but are not in the list above.</p>
+    ${extra.map(l => `<div class="catrow"><div class="grow"><b>${esc(l)}</b><div class="hint">${count(l)} product${count(l) === 1 ? "" : "s"}</div></div><button class="btn small green" data-act="area-adopt" data-name="${esc(l)}">Add to List</button></div>`).join("")}</div>` : ""}`;
+}
+const saveAreas = (locations, renames = {}) => api("/api/locations", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({locations, renames})}).then(reload).then(render);
 function tCleanup() {
     const live = [...state.lib.products].sort((a, b) => a.name.localeCompare(b.name)), gone = state.lib.removed || [];
     const head = last => `<thead><tr>${["Product Name", "Manufacturer", "Category", last].map(h => `<th class="nosort" style="width:auto">${h}</th>`).join("")}<th class="nosort" style="width:230px"></th></tr></thead>`;
@@ -1097,6 +1114,17 @@ const ACT = {
   async "extract-stored"(el) { const f = state.form; el.disabled = true;
     try { mergeDraft(f, await api(`/api/products/${f.id}/extract`, {method: "POST"}), false); } finally { render(); } },
   "extract-overwrite"() { const f = state.form; if (f.extract && f.extract.draft) { mergeDraft(f, f.extract.draft, true); render(); toast("Summary replaced with the draft from the new sheet. Check it, then verify."); } },
+  "area-add"() { const v = $("#newarea").value.trim(); if (!v) return toast("Type the name of the area first.", true);
+    if ((state.lib.locations || []).some(x => x.toLowerCase() === v.toLowerCase())) return toast("That area is already in the list.", true);
+    return saveAreas([...(state.lib.locations || []), v]).then(() => toast(`“${v}” added.`)); },
+  "area-adopt"(el) { return saveAreas([...(state.lib.locations || []), el.dataset.name]); },
+  "area-remove"(el) { const l = [...state.lib.locations], [gone] = l.splice(+el.dataset.i, 1); return saveAreas(l).then(() => toast(`“${gone}” removed.`)); },
+  "area-rename"(el) { const old = state.lib.locations[+el.dataset.i], n = state.lib.products.filter(p => (p.location || "").trim().toLowerCase() === old.toLowerCase()).length;
+    showModal(`<h2>${icon("edit")}Rename Storage Area</h2><div class="body"><input id="renamearea" class="field" value="${esc(old)}" maxlength="60" data-old="${esc(old)}">${n ? `<p class="hint" style="color:#444">${n} product${n === 1 ? "" : "s"} stored here will move to the new name.</p>` : ""}</div>
+      <div class="foot"><button class="btn green big" data-act="area-rename-go">Save</button><button class="btn big" data-act="close">Cancel</button></div>`); $("#renamearea").select(); },
+  "area-rename-go"() { const el = $("#renamearea"), old = el.dataset.old, v = el.value.trim(); if (!v || v === old) return closeModal();
+    if (state.lib.locations.some(x => x !== old && x.toLowerCase() === v.toLowerCase())) return toast("That area is already in the list.", true);
+    closeModal(); return saveAreas(state.lib.locations.map(x => x === old ? v : x), {[old]: v}).then(() => toast("Renamed.")); },
   "open-product"(el) { state.view = "detail"; state.id = el.dataset.id; render(); },
   async "note-add"() { const text = $("#notetext").value.trim(), by = $("#noteby").value.trim(); if (!text) return toast("Write the note first.", true);
     if (by) remembered("by", by); await api("/api/notes", {method: "POST", body: JSON.stringify({by, text})}); await reload(); render(); toast("Note added."); },
@@ -1172,7 +1200,7 @@ document.addEventListener("change", e => {
   else if (t.id === "pprange") { const some = $('input[name="pp"][value="some"]'); if (some) some.checked = true; }
   else if (t.dataset.o) { printOpt[t.dataset.o] = t.checked; drawPrintDialog(); }
 });
-document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#modal").className) closeModal(); if (e.key === "Enter" && e.target.id === "newcat") ACT["cat-add"](); if (e.key === "Enter" && e.target.id === "rename") ACT["cat-rename-go"](); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#modal").className) closeModal(); if (e.key === "Enter" && e.target.id === "newcat") ACT["cat-add"](); if (e.key === "Enter" && e.target.id === "rename") ACT["cat-rename-go"](); if (e.key === "Enter" && e.target.id === "newarea") ACT["area-add"](); if (e.key === "Enter" && e.target.id === "renamearea") ACT["area-rename-go"](); });
 for (const ev of ["dragover", "dragleave", "drop"]) document.addEventListener(ev, e => {
   if (state.view !== "add") { if (ev !== "dragleave") e.preventDefault(); return; }
   e.preventDefault(); const d = $("#drop"); if (d) d.classList.toggle("over", ev === "dragover");

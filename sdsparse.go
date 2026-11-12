@@ -193,6 +193,56 @@ var phrasePictos = []struct {
 	{regexp.MustCompile(`(?i)toxic to aquatic life`), "environment"},
 }
 
+// hText is the standard wording of each hazard statement, used when a sheet lists only the codes.
+var hText = map[string]string{
+	"200": "Unstable explosive.", "201": "Explosive; mass explosion hazard.", "202": "Explosive; severe projection hazard.", "203": "Explosive; fire, blast or projection hazard.",
+	"204": "Fire or projection hazard.", "205": "May mass explode in fire.", "220": "Extremely flammable gas.", "221": "Flammable gas.", "222": "Extremely flammable aerosol.",
+	"223": "Flammable aerosol.", "224": "Extremely flammable liquid and vapor.", "225": "Highly flammable liquid and vapor.", "226": "Flammable liquid and vapor.", "228": "Flammable solid.",
+	"229": "Pressurized container: may burst if heated.", "230": "May react explosively even in the absence of air.", "240": "Heating may cause an explosion.",
+	"241": "Heating may cause a fire or explosion.", "242": "Heating may cause a fire.", "250": "Catches fire spontaneously if exposed to air.", "251": "Self-heating; may catch fire.",
+	"252": "Self-heating in large quantities; may catch fire.", "260": "In contact with water releases flammable gases which may ignite spontaneously.",
+	"261": "In contact with water releases flammable gas.", "270": "May cause or intensify fire; oxidizer.", "271": "May cause fire or explosion; strong oxidizer.", "272": "May intensify fire; oxidizer.",
+	"280": "Contains gas under pressure; may explode if heated.", "281": "Contains refrigerated gas; may cause cryogenic burns or injury.", "290": "May be corrosive to metals.",
+	"300": "Fatal if swallowed.", "301": "Toxic if swallowed.", "302": "Harmful if swallowed.", "304": "May be fatal if swallowed and enters airways.", "310": "Fatal in contact with skin.",
+	"311": "Toxic in contact with skin.", "312": "Harmful in contact with skin.", "314": "Causes severe skin burns and eye damage.", "315": "Causes skin irritation.",
+	"316": "Causes mild skin irritation.", "317": "May cause an allergic skin reaction.", "318": "Causes serious eye damage.", "319": "Causes serious eye irritation.", "320": "Causes eye irritation.",
+	"330": "Fatal if inhaled.", "331": "Toxic if inhaled.", "332": "Harmful if inhaled.", "334": "May cause allergy or asthma symptoms or breathing difficulties if inhaled.",
+	"335": "May cause respiratory irritation.", "336": "May cause drowsiness or dizziness.", "340": "May cause genetic defects.", "341": "Suspected of causing genetic defects.",
+	"350": "May cause cancer.", "351": "Suspected of causing cancer.", "360": "May damage fertility or the unborn child.", "361": "Suspected of damaging fertility or the unborn child.",
+	"362": "May cause harm to breast-fed children.", "370": "Causes damage to organs.", "371": "May cause damage to organs.", "372": "Causes damage to organs through prolonged or repeated exposure.",
+	"373": "May cause damage to organs through prolonged or repeated exposure.", "400": "Very toxic to aquatic life.", "401": "Toxic to aquatic life.", "402": "Harmful to aquatic life.",
+	"410": "Very toxic to aquatic life with long lasting effects.", "411": "Toxic to aquatic life with long lasting effects.", "412": "Harmful to aquatic life with long lasting effects.",
+	"413": "May cause long lasting harmful effects to aquatic life.", "420": "Harms public health and the environment by destroying ozone in the upper atmosphere.",
+}
+
+// classPictos reads hazard classes written as names and categories, for sheets that give
+// "Skin corrosion: Category 1B" or "Skin Corr. 1B" rather than H-codes.
+var classRules = []struct {
+	re   *regexp.Regexp
+	pict string
+}{
+	{regexp.MustCompile(`(?i)skin corr[a-z.]*[^\n]{0,40}?\b1[abc]?\b|serious eye damage[^\n]{0,60}?\b1\b|eye dam\.?\s*1\b|corrosive to metals|met\.? corr`), "corrosive"},
+	{regexp.MustCompile(`(?i)skin irrit[a-z.]*[^\n]{0,40}?\b2\b|eye irrit[a-z.]*[^\n]{0,60}?\b2a?\b|skin sens[a-z.]*|stot[ -]?se\.?\s*3|specific target organ[^\n]{0,90}?single[^\n]{0,60}?\b3\b|acute tox[a-z.]*[^\n]{0,60}?\b4\b|acute tox\.?\s*4\b`), "bang"},
+	{regexp.MustCompile(`(?i)acute tox[a-z.]*[^\n]{0,60}?\b[123]\b|acute tox\.?\s*[123]\b`), "skull"},
+	{regexp.MustCompile(`(?i)flammable (?:liquids?|gas(?:es)?|solids?|aerosols?)[^\n]{0,50}?\b[123]\b|flam\.? (?:liq|gas|sol|aer)[a-z.]*\s*[123]\b|self-heating|pyrophoric|water-react`), "flame"},
+	{regexp.MustCompile(`(?i)oxidi[sz]ing|ox\.? (?:liq|sol|gas)`), "oxidizer"},
+	{regexp.MustCompile(`(?i)gases? under pressure|press\.? gas`), "gas"},
+	{regexp.MustCompile(`(?i)carcinogen|germ cell|reproductive tox|aspiration|respiratory sens|resp\.? sens|stot[ -]?re\b|repeated exposure|specific target organ[^\n]{0,90}?(?:repeated|\b[12]\b)`), "health"},
+	{regexp.MustCompile(`(?i)(?:aquatic[ -](?:acute|chronic)|(?:acute|chronic)[ -]aquatic)[^\n]{0,40}?\b[12]\b|hazardous to the aquatic[^\n]{0,80}?\b[12]\b`), "environment"},
+}
+
+var pictoWords = []struct {
+	re   *regexp.Regexp
+	pict string
+}{
+	{regexp.MustCompile(`(?i)exclamation`), "bang"}, {regexp.MustCompile(`(?i)flame over circle`), "oxidizer"},
+	{regexp.MustCompile(`(?i)flame`), "flame"}, {regexp.MustCompile(`(?i)corrosion`), "corrosive"}, {regexp.MustCompile(`(?i)skull`), "skull"},
+	{regexp.MustCompile(`(?i)health hazard`), "health"}, {regexp.MustCompile(`(?i)gas cylinder`), "gas"}, {regexp.MustCompile(`(?i)exploding bomb`), "explosive"},
+	{regexp.MustCompile(`(?i)environment`), "environment"},
+}
+
+var pictoLabel = regexp.MustCompile(`(?is)pictograms?[^\n]*(?:\n[^\n]*){0,2}`)
+
 var ghsNumber = map[string]string{"1": "explosive", "2": "flame", "3": "oxidizer", "4": "gas", "5": "corrosive", "6": "skull", "7": "bang", "8": "health", "9": "environment"}
 
 // pictograms works out which GHS diamonds the label carries from the hazard codes and statements.
@@ -212,7 +262,26 @@ func pictograms(s2 string) []string {
 	for _, m := range regexp.MustCompile(`(?i)GHS\s*0?([1-9])\b`).FindAllStringSubmatch(s2, -1) {
 		set[ghsNumber[m[1]]] = true
 	}
-	if len(byCode) == 0 && len(set) == 0 {
+	// Pictograms named in words ("Pictogram(s): Corrosion, Exclamation mark").
+	circle := regexp.MustCompile(`(?i)flame over circle`)
+	for _, blk := range pictoLabel.FindAllString(s2, -1) {
+		if circle.MatchString(blk) {
+			set["oxidizer"] = true
+			blk = circle.ReplaceAllString(blk, " ")
+		}
+		for _, pw := range pictoWords {
+			if pw.pict != "oxidizer" && pw.re.MatchString(blk) {
+				set[pw.pict] = true
+			}
+		}
+	}
+	// With no hazard codes on the sheet, work from the written classes and statements.
+	if len(byCode) == 0 {
+		for _, cr := range classRules {
+			if cr.re.MatchString(s2) {
+				set[cr.pict] = true
+			}
+		}
 		for _, pp := range phrasePictos {
 			if pp.re.MatchString(s2) {
 				set[pp.pict] = true
@@ -277,10 +346,24 @@ func hazardText(s2 []string) string {
 	}
 	if len(sents) == 0 {
 		v := labelled(s2, regexp.MustCompile(`(?i)^\W*hazard statements?`), 6)
+		if rest := strings.TrimSpace(hCode.ReplaceAllString(v, "")); hCode.MatchString(v) && len(strings.Trim(rest, " ,;.+-–")) < 8 {
+			v = "" // only codes were listed: use the standard wording instead
+		}
 		if v != "" {
 			for _, part := range regexp.MustCompile(`(?:\.\s+|;\s+)`).Split(v, -1) {
 				if len(part) > 3 && !regexp.MustCompile(`(?i)^precaution`).MatchString(part) {
 					add(part)
+				}
+			}
+		}
+	}
+	if len(sents) == 0 {
+		seenCode := map[string]bool{}
+		for _, l := range s2 {
+			for _, m := range hCode.FindAllStringSubmatch(l, -1) {
+				if txt, ok := hText[m[1]]; ok && !seenCode[m[1]] {
+					seenCode[m[1]] = true
+					add(txt)
 				}
 			}
 		}

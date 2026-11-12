@@ -625,3 +625,27 @@ func TestPageCountBackfill(t *testing.T) {
 		t.Error("nonsense page count accepted")
 	}
 }
+
+func TestStorageAreas(t *testing.T) {
+	e := newEnv(t)
+	post := func(body string) (int, map[string]any) { return e.post("/api/locations", body) }
+	id := e.add("Sani", "x", map[string]any{"location": "Mop Room"})
+	if c, _ := post(`{"locations":["Drystock","Dish Area"]}`); c != 409 {
+		t.Fatalf("removing an area that still has a product must be refused, got %d", c)
+	}
+	if e.s.find(id).Location != "Mop Room" {
+		t.Fatal("a refused change touched a product")
+	}
+	if c, _ := post(`{"locations":["Drystock","Mop Room","Cooler"]}`); c != 200 || len(e.s.lib.Locations) != 3 {
+		t.Fatalf("adding areas failed: %d %v", c, e.s.lib.Locations)
+	}
+	if c, _ := post(`{"locations":["Drystock","Mop Room","Cooler"],"renames":{"Mop Room":"Janitor Closet"}}`); c != 200 {
+		t.Fatalf("rename failed: %d", c)
+	}
+	if e.s.find(id).Location != "Janitor Closet" || e.s.lib.Locations[len(e.s.lib.Locations)-1] != "Janitor Closet" {
+		t.Errorf("rename should carry the product across: %q %v", e.s.find(id).Location, e.s.lib.Locations)
+	}
+	if c, _ := post(`{"locations":["Drystock","Cooler","Janitor Closet","drystock"]}`); c != 200 || len(e.s.lib.Locations) != 3 {
+		t.Errorf("duplicates (any case) should collapse: %v", e.s.lib.Locations)
+	}
+}

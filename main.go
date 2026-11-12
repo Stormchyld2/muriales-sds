@@ -148,7 +148,35 @@ var defaultCategories = []string{
 }
 
 var defaultLocations = []string{
-	"Dish Room", "Janitorial Closet", "Kitchen Chemical Storage", "Laundry Area", "Maintenance Room",
+	"Drystock", "Mop Room", "Dish Area", "Prep Area", "Landing Area", "Barn",
+}
+
+// The list shipped before version 1.5.2. A library still holding exactly this list, which no
+// manager changed, is moved to the current list; a customised list is left alone.
+var oldDefaultLocations = []string{"Dish Room", "Janitorial Closet", "Kitchen Chemical Storage", "Laundry Area", "Maintenance Room"}
+
+func sameList(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	m := map[string]bool{}
+	for _, x := range a {
+		m[x] = true
+	}
+	for _, x := range b {
+		if !m[x] {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *store) migrateLocations() bool {
+	if sameList(s.lib.Locations, oldDefaultLocations) {
+		s.lib.Locations = append([]string{}, defaultLocations...)
+		return true
+	}
+	return false
 }
 
 // upgrade brings a library made by an earlier version up to the current
@@ -461,6 +489,9 @@ func (s *store) load() error {
 		s.lib.Products = []*Product{}
 	}
 	upgraded := s.upgrade()
+	if s.migrateLocations() {
+		upgraded = true
+	}
 	starter := s.applyStarter()
 	if (s.scan() || starter || upgraded) && !s.isReadOnly() {
 		return s.save()
