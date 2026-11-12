@@ -426,7 +426,7 @@ function vForm() {
       <label>Category:</label><div><select class="field" data-f="category">${state.lib.categories.map(c => `<option ${c === f.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
         <div class="hint" id="cathelp" style="margin-top:3px">${esc(CAT_HELP[f.category] || "")}</div></div>
       <label>Also Used For:</label>${inp("tags", "Optional tags, separated by commas, e.g. Fryer cleaner, Grill cleaner")}
-      <label>Storage Location:</label><div><input class="field" data-f="location" list="loclist" value="${esc(f.location)}" placeholder="Choose from the list or type a new location">
+      <label>Storage Location:</label><div><input class="field" data-f="location" list="loclist" value="${esc(f.location)}" placeholder="Which storage area holds the shelf? Choose from the list">
         <datalist id="loclist">${locations().map(l => `<option value="${esc(l)}">`).join("")}</datalist></div>
       <label>SDS Revision Date:</label><input type="date" class="field" data-f="revisionDate" value="${esc(f.revisionDate)}" style="width:190px">
     </div>
@@ -486,12 +486,12 @@ function tAreas() {
   const extra = [...new Set(state.lib.products.map(p => (p.location || "").trim()).filter(l => l && !known.has(l.toLowerCase())))];
   return `
   <div class="panel" style="max-width:860px">
-    <h3 style="margin-top:0">Storage areas</h3>
-    <p class="hint">The places chemicals are kept. They appear in the Storage Location list when adding or editing a sheet, and in the printed index. Renaming an area updates every product stored there. An area with products in it can't be removed until they are moved.</p>
+    <h3 style="margin-top:0">Storage areas (the room or area that holds the shelf)</h3>
+    <p class="hint">The rooms and areas that hold the shelves chemicals sit on, such as Drystock or the Mop Room. They appear in the Storage Location list when adding or editing a sheet, and in the printed index. Renaming an area updates every product stored there. An area with products in it can't be removed until they are moved.</p>
     ${list.length ? list.map((l, i) => { const n = count(l); return `<div class="catrow"><div class="grow"><b>${esc(l)}</b><div class="hint">${n ? n + " product" + (n === 1 ? "" : "s") + " stored here" : "No products"}</div></div>
       <button class="btn small" data-act="area-rename" data-i="${i}">${icon("edit")}Rename</button>
       <button class="btn small wine" data-act="area-remove" data-i="${i}" ${n ? "disabled title=\"Move the products out of this area first\"" : ""}>${icon("trash")}Remove</button></div>`; }).join("") : `<p class="hint">No storage areas yet.</p>`}
-    <div class="row" style="margin-top:10px"><input id="newarea" class="field" style="max-width:300px" maxlength="60" placeholder="New storage area, e.g. Walk-in Cooler"><button class="btn green" data-act="area-add">${icon("plus")}Add Area</button></div>
+    <div class="row" style="margin-top:10px"><input id="newarea" class="field" style="max-width:300px" maxlength="60" placeholder="New room or area, e.g. Walk-in Cooler"><button class="btn green" data-act="area-add">${icon("plus")}Add Area</button></div>
   </div>
   ${extra.length ? `<div class="panel" style="max-width:860px"><h3 style="margin-top:0">Areas typed in on sheets</h3><p class="hint">These were typed into products but are not in the list above.</p>
     ${extra.map(l => `<div class="catrow"><div class="grow"><b>${esc(l)}</b><div class="hint">${count(l)} product${count(l) === 1 ? "" : "s"}</div></div><button class="btn small green" data-act="area-adopt" data-name="${esc(l)}">Add to List</button></div>`).join("")}</div>` : ""}`;
