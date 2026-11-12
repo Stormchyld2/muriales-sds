@@ -308,6 +308,7 @@ function vLibrary() {
     <label>Category:</label>
     <select id="cat" class="field" style="width:210px"><option value="">All Categories</option>
       ${state.lib.categories.map(c => `<option ${c === state.cat ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
+    <button class="btn" data-act="refresh-folder" title="Pick up PDFs that were dropped into the sheets folder">${icon("swap")}Refresh</button>
   </div>
   <div class="tablewrap">${body}</div>
   <div class="row">
@@ -1078,6 +1079,11 @@ const ACT = {
   replace(el) { const p = byId(el.dataset.id); state.form = {...blankForm(), ...p, pictograms: p.pictograms || [], replaceMode: true}; state.view = "add"; render(); },
   remove(el) { state.id = el.dataset.id; removeDialog(byId(state.id)); },
   async "remove-yes"() { const p = byId(state.id); await api("/api/products/" + state.id, {method: "DELETE"}); closeModal(); await reload(); render(); toast(`“${p.name}” was removed. It can be restored from Settings, Clean Up for 30 days.`); },
+  async "refresh-folder"() { const had = new Set(state.lib.products.map(p => p.id)), gone = state.lib.products.filter(p => p.missing).length;
+    await reload(); render();
+    const added = state.lib.products.filter(p => !had.has(p.id)), nowGone = state.lib.products.filter(p => p.missing).length;
+    toast(added.length ? `Added ${added.length} new sheet${added.length === 1 ? "" : "s"}: ${added.slice(0, 3).map(p => p.name).join(", ")}${added.length > 3 ? "..." : ""}. Check the details and edit if needed.`
+      : nowGone !== gone ? "Refreshed. The PDF-missing flags were updated." : "Refreshed. No new PDFs in the folder."); },
   "purge-ask"(el) { const p = (state.lib.removed || []).find(x => x.id === el.dataset.id) || {name: "this product"};
     showModal(`<h2>${icon("trash")}Delete Permanently</h2><div class="body"><p>Delete <b>${esc(p.name)}</b> and its PDF for good? This cannot be undone.</p></div>
     <div class="foot"><button class="btn wine big" data-act="purge-go" data-id="${el.dataset.id}">${icon("trash")}Delete Permanently</button><button class="btn big" data-act="close">Cancel</button></div>`); },

@@ -72,3 +72,7 @@ Choosing or dragging a PDF onto **Add SDS** reads the sheet and drafts the produ
 ## 1.5.3 – Removed products
 
 Removed products are kept for 30 days (counted from the day they were removed), then deleted permanently along with their archived PDF. This is checked each time the program starts and every few hours while it is open. In Settings, Clean Up, Removed products, each item shows the days left and has a **Delete Permanently** button next to Restore. Read-only copies never delete anything.
+
+## 1.5.4 – Refresh button
+
+The Library screen has a **Refresh** button. It re-reads the sheets folder, adds any PDF dropped in by hand (drafted from the PDF, marked needs review) and updates the PDF-missing flags, without restarting the program.
