@@ -1,3 +1,4 @@
 *.exe
 SDS Data/
 SDS Backups/
+*.syso

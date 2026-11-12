@@ -47,6 +47,9 @@ Requires Go 1.22 or newer. No other dependencies.
 
     GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w -H=windowsgui" -o MurialesSDSManager.exe .
 
+The GitHub Actions build also embeds the program icon (`app.ico`) by running
+`windres -O coff -o rsrc_windows_amd64.syso app.rc` before the build.
+
 ## Credits
 
 PDF assembly uses [pdf-lib](https://pdf-lib.js.org/) (MIT licence), bundled as

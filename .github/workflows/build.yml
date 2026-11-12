@@ -13,15 +13,21 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.24"
           cache: false
 
       - name: Check the code
         run: go vet ./...
+
+      - name: Add the program icon
+        shell: pwsh
+        run: |
+          windres -O coff -o rsrc_windows_amd64.syso app.rc
+          if (-not (Test-Path rsrc_windows_amd64.syso)) { throw "The icon resource was not created." }
 
       - name: Build MurialesSDSManager.exe
         run: go build -trimpath -ldflags "-s -w -H=windowsgui" -o MurialesSDSManager.exe .
@@ -58,7 +64,7 @@ jobs:
           Write-Host "Start-up check passed."
 
       - name: Upload the program
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: MurialesSDSManager
           path: MurialesSDSManager.exe
