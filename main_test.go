@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 type env struct {
@@ -647,5 +648,66 @@ func TestStorageAreas(t *testing.T) {
 	}
 	if c, _ := post(`{"locations":["Drystock","Cooler","Janitor Closet","drystock"]}`); c != 200 || len(e.s.lib.Locations) != 3 {
 		t.Errorf("duplicates (any case) should collapse: %v", e.s.lib.Locations)
+	}
+}
+
+func TestRemovedItemsAreDeletedAfter30Days(t *testing.T) {
+	e := newEnv(t)
+	oldID := e.add("Old Sani", "old", nil)
+	newID_ := e.add("New Sani", "new", nil)
+	for _, id := range []string{oldID, newID_} {
+		if c, _ := e.do(httptest.NewRequest("DELETE", "/api/products/"+id, nil)); c != 200 {
+			t.Fatal("remove failed")
+		}
+	}
+	var oldFile, newFile string
+	for _, p := range e.s.lib.Removed {
+		if p.ID == oldID {
+			p.RemovedAt = time.Now().AddDate(0, 0, -31).Format("2006-01-02T15:04:05")
+			oldFile = filepath.Join(e.s.goneDir(), p.ArchivedFile)
+		} else {
+			newFile = filepath.Join(e.s.goneDir(), p.ArchivedFile)
+		}
+	}
+	// a PDF left behind by a replace, 40 days ago and 2 days ago
+	stale, fresh := filepath.Join(e.s.goneDir(), "stale_replaced.pdf"), filepath.Join(e.s.goneDir(), "fresh_replaced.pdf")
+	os.WriteFile(stale, pdf("s"), 0o644)
+	os.WriteFile(fresh, pdf("f"), 0o644)
+	os.Chtimes(stale, time.Now().AddDate(0, 0, -40), time.Now().AddDate(0, 0, -40))
+	os.Chtimes(fresh, time.Now().AddDate(0, 0, -2), time.Now().AddDate(0, 0, -2))
+	e.s.mu.Lock()
+	p, f := e.s.purgeOld()
+	e.s.mu.Unlock()
+	if p != 1 || f != 2 {
+		t.Fatalf("purged %d products and %d files, want 1 and 2", p, f)
+	}
+	if len(e.s.lib.Removed) != 1 || e.s.lib.Removed[0].ID != newID_ {
+		t.Errorf("only the recent product should remain: %v", e.s.lib.Removed)
+	}
+	for _, gone := range []string{oldFile, stale} {
+		if _, err := os.Stat(gone); err == nil {
+			t.Errorf("%s should be deleted", gone)
+		}
+	}
+	for _, kept := range []string{newFile, fresh} {
+		if _, err := os.Stat(kept); err != nil {
+			t.Errorf("%s should be kept", kept)
+		}
+	}
+}
+
+func TestDeletePermanentlyNow(t *testing.T) {
+	e := newEnv(t)
+	id := e.add("Sink & Surface", "x", nil)
+	e.do(httptest.NewRequest("DELETE", "/api/products/"+id, nil))
+	file := filepath.Join(e.s.goneDir(), e.s.lib.Removed[0].ArchivedFile)
+	if c, _ := e.do(httptest.NewRequest("DELETE", "/api/removed/"+id, nil)); c != 200 {
+		t.Fatal("delete failed")
+	}
+	if len(e.s.lib.Removed) != 0 {
+		t.Error("record should be gone")
+	}
+	if _, err := os.Stat(file); err == nil {
+		t.Error("archived PDF should be gone")
 	}
 }

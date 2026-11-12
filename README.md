@@ -68,3 +68,7 @@ PDF assembly uses [pdf-lib](https://pdf-lib.js.org/) (MIT licence), bundled as
 ## Auto-drafting the summary (1.5)
 
 Choosing or dragging a PDF onto **Add SDS** reads the sheet and drafts the product name, manufacturer, SDS date, signal word, hazard pictograms, hazards, first aid and PPE. PDFs dropped into the `sheets` folder, or bulk-imported, arrive the same way, marked "needs review". The reader is built into the program (no internet needed). It finds Sections 1, 2, 4 and 8 of the standard 16-section SDS layout; pictograms come from the H-codes and statements in Section 2. Scanned (image-only) and password-protected PDFs cannot be read and are left for a manager to type. A draft is never counted as verified: a manager checks it and ticks the verification box. Existing text is never overwritten unless asked.
+
+## 1.5.3 – Removed products
+
+Removed products are kept for 30 days (counted from the day they were removed), then deleted permanently along with their archived PDF. This is checked each time the program starts and every few hours while it is open. In Settings, Clean Up, Removed products, each item shows the days left and has a **Delete Permanently** button next to Restore. Read-only copies never delete anything.

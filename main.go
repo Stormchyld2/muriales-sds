@@ -1030,6 +1030,7 @@ func (s *store) routes(mux *http.ServeMux) {
 				fail(w, 500, "the PDF could not be moved to the removed folder, so nothing was changed: "+err.Error())
 				return
 			}
+			_ = os.Chtimes(filepath.Join(s.goneDir(), archived), time.Now(), time.Now()) // the 30 days count from today
 		}
 		oldProducts, oldRemoved, before := s.lib.Products, s.lib.Removed, *p
 		kept := make([]*Product, 0, len(oldProducts))
@@ -1478,6 +1479,17 @@ func main() {
 	sort.SliceStable(s.lib.Products, func(i, j int) bool {
 		return strings.ToLower(s.lib.Products[i].Name) < strings.ToLower(s.lib.Products[j].Name)
 	})
+
+	s.mu.Lock()
+	s.purgeOld()
+	s.mu.Unlock()
+	go func() {
+		for range time.Tick(6 * time.Hour) {
+			s.mu.Lock()
+			s.purgeOld()
+			s.mu.Unlock()
+		}
+	}()
 
 	mux := http.NewServeMux()
 	s.routes(mux)

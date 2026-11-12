@@ -497,9 +497,10 @@ function tAreas() {
     ${extra.map(l => `<div class="catrow"><div class="grow"><b>${esc(l)}</b><div class="hint">${count(l)} product${count(l) === 1 ? "" : "s"}</div></div><button class="btn small green" data-act="area-adopt" data-name="${esc(l)}">Add to List</button></div>`).join("")}</div>` : ""}`;
 }
 const saveAreas = (locations, renames = {}) => api("/api/locations", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({locations, renames})}).then(reload).then(render);
+function daysLeft(p) { const t = new Date(p.removedAt).getTime(); if (!t) return ""; const d = Math.max(0, 30 - Math.floor((Date.now() - t) / 86400000)); return d === 0 ? "Deleted at next start" : d + " day" + (d === 1 ? "" : "s") + " left"; }
 function tCleanup() {
     const live = [...state.lib.products].sort((a, b) => a.name.localeCompare(b.name)), gone = state.lib.removed || [];
-    const head = last => `<thead><tr>${["Product Name", "Manufacturer", "Category", last].map(h => `<th class="nosort" style="width:auto">${h}</th>`).join("")}<th class="nosort" style="width:230px"></th></tr></thead>`;
+    const head = last => `<thead><tr>${["Product Name", "Manufacturer", "Category", last].map(h => `<th class="nosort" style="width:auto">${h}</th>`).join("")}<th class="nosort" style="width:400px"></th></tr></thead>`;
     return `
   <div class="panel">
     <h3 style="margin-top:0">Products in the library</h3>
@@ -512,9 +513,10 @@ function tCleanup() {
   <div class="panel">
     <h3 style="margin-top:0">Removed products</h3>
     ${gone.length ? `<table class="plain">${head("Removed")}<tbody>
-      ${gone.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.manufacturer)}</td><td>${esc(p.category)}</td><td>${fmtDate(p.removedAt)}</td>
-        <td style="text-align:right;white-space:nowrap">${p.archivedFile ? `<button class="btn small" data-act="view-removed" data-id="${p.id}">View PDF</button> ` : ""}<button class="btn small green" data-act="restore-product" data-id="${p.id}">Restore</button></td></tr>`).join("")}
-    </tbody></table>` : `<p class="hint">Nothing has been removed. Removed products are listed here with their details so they can be restored.</p>`}
+      ${gone.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.manufacturer)}</td><td>${esc(p.category)}</td><td>${fmtDate(p.removedAt)}<div class="hint">${daysLeft(p)}</div></td>
+        <td style="text-align:right;white-space:nowrap">${p.archivedFile ? `<button class="btn small" data-act="view-removed" data-id="${p.id}">View PDF</button> ` : ""}<button class="btn small green" data-act="restore-product" data-id="${p.id}">Restore</button> <button class="btn small wine" data-act="purge-ask" data-id="${p.id}">${icon("trash")}Delete Permanently</button></td></tr>`).join("")}
+    </tbody></table>` : `<p class="hint">Nothing has been removed. Removed products are listed here so they can be restored.</p>`}
+    <p class="hint">Removed products are kept for 30 days, then deleted permanently along with their PDF.</p>
   </div>`;
 }
 function tStorage() {
@@ -726,7 +728,7 @@ function removeDialog(p) {
   showModal(`<h2>${icon("warn")}Remove SDS</h2><div class="body">
     <p style="margin-top:0">Are you sure you want to remove this product from the SDS library?</p>
     <div class="box"><dl><dt>Product:</dt><dd>${esc(p.name)}</dd><dt>Manufacturer:</dt><dd>${esc(p.manufacturer) || "—"}</dd><dt>Category:</dt><dd>${esc(p.category) || "—"}</dd></dl></div>
-    <p>The product leaves the library and the printed book. Its details and PDF are kept, and it can be brought back from Settings, Clean Up.</p></div>
+    <p>The product leaves the library and the printed book. Its details and PDF are kept for 30 days and it can be brought back from Settings, Clean Up. After that it is deleted permanently.</p></div>
     <div class="foot"><button class="btn wine big" data-act="remove-yes">${icon("trash")}Remove</button><button class="btn big" data-act="close">Cancel</button></div>`);
 }
 
@@ -1075,7 +1077,11 @@ const ACT = {
   edit() { const p = byId(state.id); state.form = {...blankForm(), ...p, pictograms: p.pictograms || []}; state.view = "add"; render(); },
   replace(el) { const p = byId(el.dataset.id); state.form = {...blankForm(), ...p, pictograms: p.pictograms || [], replaceMode: true}; state.view = "add"; render(); },
   remove(el) { state.id = el.dataset.id; removeDialog(byId(state.id)); },
-  async "remove-yes"() { const p = byId(state.id); await api("/api/products/" + state.id, {method: "DELETE"}); closeModal(); await reload(); render(); toast(`“${p.name}” was removed. It can be restored from Settings, Clean Up.`); },
+  async "remove-yes"() { const p = byId(state.id); await api("/api/products/" + state.id, {method: "DELETE"}); closeModal(); await reload(); render(); toast(`“${p.name}” was removed. It can be restored from Settings, Clean Up for 30 days.`); },
+  "purge-ask"(el) { const p = (state.lib.removed || []).find(x => x.id === el.dataset.id) || {name: "this product"};
+    showModal(`<h2>${icon("trash")}Delete Permanently</h2><div class="body"><p>Delete <b>${esc(p.name)}</b> and its PDF for good? This cannot be undone.</p></div>
+    <div class="foot"><button class="btn wine big" data-act="purge-go" data-id="${el.dataset.id}">${icon("trash")}Delete Permanently</button><button class="btn big" data-act="close">Cancel</button></div>`); },
+  async "purge-go"(el) { el.disabled = true; await api("/api/removed/" + el.dataset.id, {method: "DELETE"}); closeModal(); await reload(); render(); toast("Deleted permanently."); },
   async "restore-product"(el) { const p = await api("/api/removed/" + el.dataset.id + "/restore", {method: "POST"}); await reload(); render(); toast(`“${p.name}” is back in the library.`); },
   "view-removed"(el) { window.open("/pdf-removed/" + el.dataset.id, "_blank"); },
   tab(el) { state.tab = el.dataset.t; render(); loadTab(); },
