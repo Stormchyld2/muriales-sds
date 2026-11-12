@@ -1221,8 +1221,9 @@ for (const ev of ["dragover", "dragleave", "drop"]) document.addEventListener(ev
 
 let misses = 0;
 setInterval(() => refreshLock().catch(() => {}), 15000);
-setInterval(() => fetch("/api/ping").then(r => { if (!r.ok) throw 0; misses = 0; $("#lost").style.display = "none"; }).catch(() => { if (++misses >= 2) $("#lost").style.display = "block"; }), 15000);
+setInterval(() => fetch("/api/ping").then(r => { if (!r.ok) throw 0; misses = 0; $("#lost").style.display = "none"; }).catch(() => { if (++misses >= 2) $("#lost").style.display = "block"; }), 5000);
 fetch("/api/ping");
+addEventListener("pagehide", () => { try { fetch("/api/closing", { keepalive: true }); } catch (e) {} });
 reload().then(() => { render(); refreshLock().catch(() => {}); backfillPages(); }).catch(e => toast(e.message, true));
 </script>
 </body>

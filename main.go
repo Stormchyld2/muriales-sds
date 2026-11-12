@@ -1495,11 +1495,26 @@ func main() {
 		}
 	}()
 
+	quit := make(chan struct{})
+	var quitOnce sync.Once
+	stop := func() { quitOnce.Do(func() { close(quit) }) }
 	mux := http.NewServeMux()
 	s.routes(mux)
 	mux.HandleFunc("GET /api/ping", func(w http.ResponseWriter, r *http.Request) {
 		lastPing.Store(time.Now().UnixNano())
 		fmt.Fprint(w, appID)
+	})
+	// The window says so as it closes. If no page checks in again within a
+	// few seconds (a reload does), the program ends.
+	mux.HandleFunc("GET /api/closing", func(w http.ResponseWriter, r *http.Request) {
+		asked := time.Now().UnixNano()
+		go func() {
+			time.Sleep(12 * time.Second)
+			if lastPing.Load() < asked {
+				stop()
+			}
+		}()
+		w.WriteHeader(http.StatusNoContent)
 	})
 	sub, _ := fs.Sub(uiFiles, "ui")
 	mux.Handle("GET /", http.FileServer(http.FS(sub)))
@@ -1513,7 +1528,6 @@ func main() {
 	url := fmt.Sprintf("http://127.0.0.1:%d/", port)
 	log.Printf("Muriale's SDS Book running at %s, data in %s", url, s.dir)
 	started := time.Now()
-	quit := make(chan struct{})
 
 	if win, err := openWindow(url); err != nil {
 		log.Printf("could not open a window: %v", err)
@@ -1522,7 +1536,7 @@ func main() {
 		go func() {
 			_ = win.Wait()
 			if time.Since(started) > 8*time.Second {
-				close(quit)
+				stop()
 			}
 		}()
 	}
@@ -1534,13 +1548,13 @@ func main() {
 			last := lastPing.Load()
 			if last == 0 {
 				if time.Since(started) > 5*time.Minute {
-					close(quit)
+					stop()
 					return
 				}
 				continue
 			}
-			if time.Since(time.Unix(0, last)) > 3*time.Minute {
-				close(quit)
+			if time.Since(time.Unix(0, last)) > 90*time.Second {
+				stop()
 				return
 			}
 		}
@@ -1557,6 +1571,7 @@ func main() {
 	finalDir := s.dir
 	s.mu.Unlock()
 	s.unlock(finalDir)
+	os.Exit(0)
 }
 
 func logName() string {
