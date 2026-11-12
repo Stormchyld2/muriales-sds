@@ -1,0 +1,65 @@
+name: Windows build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: false
+
+      - name: Check the code
+        run: go vet ./...
+
+      - name: Build MurialesSDSManager.exe
+        run: go build -trimpath -ldflags "-s -w -H=windowsgui" -o MurialesSDSManager.exe .
+
+      - name: Start the program and check it responds
+        shell: pwsh
+        run: |
+          $env:SDSBOOK_DATA = Join-Path $env:RUNNER_TEMP "SDS Data"
+          $app = Start-Process -FilePath .\MurialesSDSManager.exe -PassThru
+          $base = "http://127.0.0.1:47615"
+          $ping = $null
+          foreach ($i in 1..30) {
+            try { $ping = Invoke-WebRequest "$base/api/ping" -UseBasicParsing; break } catch { Start-Sleep 1 }
+          }
+          if (-not $ping) { throw "The program did not start answering within 30 seconds." }
+          if ("$($ping.Content)".Trim() -ne "muriales-sds-book") { throw "Unexpected answer from the program." }
+
+          $lib = Invoke-RestMethod "$base/api/library"
+          if ($lib.categories.Count -lt 1) { throw "The library came back without categories." }
+          Write-Host "Library opened with $($lib.categories.Count) categories and $($lib.products.Count) products."
+
+          $page = Invoke-WebRequest "$base/" -UseBasicParsing
+          if ($page.Content -notmatch "SDS Manager") { throw "The main screen did not load." }
+          if (-not (Test-Path (Join-Path $env:SDSBOOK_DATA "library.json"))) { throw "library.json was not created." }
+
+          Start-Sleep 3
+          $win = Get-CimInstance Win32_Process -Filter "name='msedge.exe' or name='chrome.exe'" |
+            Where-Object { $_.CommandLine -match "--app=http://127.0.0.1:47615" }
+          if ($win) { Write-Host "Application window process started: $($win[0].Name)" }
+          else { Write-Host "::warning::No Edge or Chrome application window process was found on the build machine." }
+
+          Stop-Process -Id $app.Id -Force
+          Get-Process msedge, chrome -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Write-Host "Start-up check passed."
+
+      - name: Upload the program
+        uses: actions/upload-artifact@v4
+        with:
+          name: MurialesSDSManager
+          path: MurialesSDSManager.exe
+          if-no-files-found: error
