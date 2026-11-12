@@ -15,7 +15,7 @@ aside{width:176px;flex:none;background:linear-gradient(#25272b,#1f2125);border-r
 aside img{width:150px;margin:2px auto 16px;display:block}
 .nav{display:flex;align-items:center;gap:10px;padding:9px 12px;margin:2px 0;border-radius:6px;color:var(--text);background:none;border:0;cursor:pointer;text-align:left;font-size:14.5px;width:100%}
 .nav:hover{background:#3a3d43}
-.nav.on{background:linear-gradient(var(--wine),var(--wine2));box-shadow:inset 0 0 0 1px #b23a4a55}
+.nav.on{background:linear-gradient(#2f72bd,#1d4b82);box-shadow:inset 0 0 0 1px #7db0ea66}
 .nav svg,.btn svg{width:18px;height:18px;flex:none}
 main{flex:1;min-width:0;display:flex;flex-direction:column}
 header{display:flex;align-items:center;gap:16px;padding:12px 20px 10px}
@@ -106,6 +106,20 @@ dt{font-weight:600}dd{margin:0}
 #lost{position:fixed;top:0;left:0;right:0;background:#c01f30;padding:10px;text-align:center;font-weight:600;display:none;z-index:50}
 .catrow{display:flex;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid #4a4d55}
 .catrow .btn{flex:none}
+.tag.red{border-color:#e25a68;color:#ff9aa5}.tag.blue{border-color:#6aa5e8;color:#a9cdf5}
+.note{border-radius:6px;padding:9px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid}
+.note.ok{background:#1f3a26;border-color:#3aa24e}.note.warn{background:#473a17;border-color:#d9b56a}.note.bad{background:#4a1820;border-color:#e25a68}
+.note .grow{min-width:260px}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;color:var(--mute);padding:8px 16px;cursor:pointer;font-weight:600;font-size:15px}
+.tabs button.on{color:var(--text);border-bottom-color:var(--gold)}
+.picgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px}
+.picgrid label{display:flex;gap:8px;align-items:center;font-weight:400;border:1px solid var(--line);border-radius:6px;padding:4px 8px;cursor:pointer}
+.picgrid svg{width:34px;height:34px;flex:none}
+.pictos figure{margin:0;text-align:center;font-size:11px;line-height:1.2;max-width:76px}
+.signal{align-self:center;font-weight:800;letter-spacing:1px;padding:5px 12px;border-radius:5px;font-size:15px}
+.signal.Danger{background:#c8202f;color:#fff}.signal.Warning{background:#e7b416;color:#111}
+.plain td{cursor:default}.plain tbody tr{cursor:default}.plain tbody tr:hover{background:none}
 code{background:#1f2125;border:1px solid #565a62;border-radius:4px;padding:2px 6px;word-break:break-all}
 </style>
 </head>
@@ -166,13 +180,22 @@ const ICON = {
 const icon = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
 const diamond = inner => `<svg viewBox="0 0 48 48"><path d="M24 2 46 24 24 46 2 24z" fill="#fff" stroke="#d81e2c" stroke-width="3.5" stroke-linejoin="round"/>${inner}</svg>`;
 const PICTO = {
-  flame: diamond('<path d="M24 12c1 5 7 7 7 14a7 7 0 0 1-14 0c0-3 1.500-5 3-6 0 2 1 3 2 3 1-3 0-7 2-11z" fill="#111"/><path d="M15 36h18" stroke="#111" stroke-width="2.5"/>'),
-  bang: diamond('<path d="M24 11c2 0 3 1.500 3 3l-1.700 13h-2.600L21 14c0-1.500 1-3 3-3z" fill="#111"/><circle cx="24" cy="33" r="3" fill="#111"/>'),
+  flame: diamond('<path d="M24 12c1 5 7 7 7 14a7 7 0 0 1-14 0c0-3 1.500-5 3-6 0 2 1 3 2 3 1-3 0-7 2-11z" fill="#111"/><path d="M15 36h18" stroke="#111" stroke-width="2.500"/>'),
+  oxidizer: diamond('<path d="M24 9c.7 3.500 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3.500 2-4.200 0 1.400.7 2 1.400 2 .7-2 0-5 1.600-7.800z" fill="#111"/><circle cx="24" cy="31" r="6" fill="none" stroke="#111" stroke-width="2.600"/><path d="M14 39h20" stroke="#111" stroke-width="2.500"/>'),
+  explosive: diamond('<path d="M24 12l2.500 7 6-4.500-2.500 7 7.500.500-6 4.500 5 5.500-7.500-1.500L28 38l-4-6-4 6-1-7.500-7.500 1.500 5-5.500-6-4.500 7.500-.500-2.500-7 6 4.500z" fill="#111"/>'),
+  corrosive: diamond('<path d="M14 13l9 3-2 6-9-3zM34 13l-9 3 2 6 9-3z" fill="#111"/><path d="M20 24c1.200 2 2 3 2 4.200a2 2 0 0 1-4 0c0-1.200.8-2.200 2-4.200zM29 24c1.200 2 2 3 2 4.200a2 2 0 0 1-4 0c0-1.200.8-2.200 2-4.200z" fill="#111"/><path d="M11 35h9l2-2.500 2 2.500h13" stroke="#111" stroke-width="3" fill="none"/>'),
+  gas: diamond('<g transform="rotate(-35 24 24)"><rect x="12" y="19" width="22" height="10" rx="5" fill="#111"/><rect x="34" y="22" width="5" height="4" fill="#111"/></g>'),
   skull: diamond('<path d="M24 11a9 9 0 0 0-9 9c0 3 1.400 5 3.500 6.500V30h11v-3.500C31.600 25 33 23 33 20a9 9 0 0 0-9-9z" fill="#111"/><circle cx="20.500" cy="20" r="2.300" fill="#fff"/><circle cx="27.500" cy="20" r="2.300" fill="#fff"/><path d="M15 32l18 6M33 32l-18 6" stroke="#111" stroke-width="2.600" stroke-linecap="round"/>'),
+  bang: diamond('<path d="M24 11c2 0 3 1.500 3 3l-1.700 13h-2.600L21 14c0-1.500 1-3 3-3z" fill="#111"/><circle cx="24" cy="33" r="3" fill="#111"/>'),
+  health: diamond('<circle cx="24" cy="15" r="4.500" fill="#111"/><path d="M13 38c0-9 4-16 11-16s11 7 11 16z" fill="#111"/><path d="M24 24.500l1.300 3 3.200-.600-2 2.600 2 2.600-3.200-.600-1.300 3-1.300-3-3.200.600 2-2.600-2-2.600 3.200.600z" fill="#fff"/>'),
+  environment: diamond('<path d="M17 33V20M17 25l-4-4M17 23l4-4M17 20l-2-4M17 20l2-4" stroke="#111" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M22 33c3-4 9-4 12 0-3 3.500-9 3.500-12 0zM34 33l3-2.500v5z" fill="#111"/><path d="M11 37h26" stroke="#111" stroke-width="2"/>'),
   cross: '<svg viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="5" fill="#c8202f"/><path d="M24 11v26M11 24h26" stroke="#fff" stroke-width="8"/></svg>',
   ppe: '<svg viewBox="0 0 48 48" fill="none" stroke="#e0bc6e" stroke-width="3"><rect x="4" y="16" width="17" height="14" rx="6"/><rect x="27" y="16" width="17" height="14" rx="6"/><path d="M21 22h6"/></svg>',
 };
-$("#pictos").innerHTML = PICTO.flame + PICTO.bang + PICTO.skull;
+// The nine GHS hazard pictograms, in the order they are offered on the form.
+const GHS = [["flame","Flammable"],["oxidizer","Oxidizer"],["explosive","Explosive"],["corrosive","Corrosive"],["gas","Gas under pressure"],["skull","Acute toxicity"],["bang","Irritant / harmful"],["health","Health hazard"],["environment","Environmental hazard"]];
+const pictosOf = p => GHS.filter(([k]) => (p.pictograms || []).includes(k));
+
 
 const CAT_HELP = {
   "Dish Machine": "Machine detergents, rinse aids, delimers, machine descalers",
@@ -190,7 +213,7 @@ const CAT_HELP = {
   "Air Care & Deodorizers": "Air fresheners, odor neutralizers, deodorizing chemicals",
   "Other / Miscellaneous": "Chemicals that don't fit an established category",
 };
-const state = { lib: {categories: [], locations: [], catchAll: "Other / Miscellaneous", products: [], dataFolder: ""}, sel: new Set(), q: "", cat: "", sort: {key: "name", dir: 1}, view: "library", id: null, form: null };
+const state = { tab: "storage", backups: null, lock: null, rec: null, diag: null, integ: null, lib: {categories: [], locations: [], catchAll: "Other / Miscellaneous", products: [], removed: [], binder: null, dataFolder: ""}, sel: new Set(), q: "", cat: "", sort: {key: "name", dir: 1}, view: "library", id: null, form: null };
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
@@ -209,29 +232,56 @@ function toast(msg, err) {
   clearTimeout(toastT); toastT = setTimeout(() => t.style.display = "none", err ? 7000 : 3500);
 }
 const fmtDate = d => { const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(d || ""); return m ? `${m[2]}/${m[3]}/${m[1]}` : ""; };
-const sdsDate = p => p.revisionDate || (p.updatedAt || "").slice(0, 10);
-const hasSummary = p => [p.hazards, p.firstAidEyes, p.firstAidSkin, p.firstAidInhalation, p.firstAidSwallowed, p.ppe].some(v => (v || "").trim());
+// The SDS date is the manufacturer's revision date and nothing else. The day a
+// manager last edited the product is a different thing and is never shown in its place.
+const sdsDate = p => fmtDate(p.revisionDate) || "Unknown";
+const hasSummary = p => [p.hazards, p.firstAidEyes, p.firstAidSkin, p.firstAidInhalation, p.firstAidSwallowed, p.ppe, p.signalWord].some(v => (v || "").trim()) || (p.pictograms || []).length > 0;
+// Where the emergency summary stands: missing, typed in but never checked,
+// checked but the PDF has since been replaced, or verified.
+function summaryState(p) {
+  if (!hasSummary(p)) return {k: "none", tag: "summary missing", cls: ""};
+  if (p.summaryNeedsCheck) return {k: "recheck", tag: "summary needs re-check", cls: "red"};
+  if (!p.summaryVerifiedAt) return {k: "unverified", tag: "summary not verified", cls: ""};
+  return {k: "ok"};
+}
+// What has changed in the library since the paper binder was last recorded as up to date.
+function binderDiff() {
+  const b = state.lib.binder; if (!b) return null;
+  const items = b.items || {}, live = state.lib.products, d = {add: [], replace: [], pull: [], index: false};
+  for (const p of live) {
+    const was = items[p.id];
+    if (!was) d.add.push(p);
+    else if (was.pdfUpdatedAt !== p.pdfUpdatedAt) d.replace.push(p);
+    else if (["name", "manufacturer", "category", "location", "revisionDate"].some(k => (was[k] || "") !== (p[k] || ""))) d.index = true;
+  }
+  for (const id in items) if (!live.some(p => p.id === id)) d.pull.push(items[id].name);
+  d.any = d.add.length + d.replace.length + d.pull.length > 0 || d.index;
+  return d;
+}
 const byId = id => state.lib.products.find(p => p.id === id);
 const longDate = () => new Date().toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"});
 
 function visible() {
   const q = state.q.trim().toLowerCase();
   const k = state.sort.key;
-  const val = p => (k === "date" ? sdsDate(p) : p[k] || "").toLowerCase();
+  const val = p => (k === "date" ? p.revisionDate || "" : p[k] || "").toLowerCase();
   return state.lib.products
-    .filter(p => (!state.cat || p.category === state.cat) && (!q || [p.name, p.manufacturer, p.supplier, p.tags].join(" ").toLowerCase().includes(q)))
+    .filter(p => (!state.cat || p.category === state.cat) && (!q || [p.name, p.aliases, p.manufacturer, p.supplier, p.tags].join(" ").toLowerCase().includes(q)))
     .sort((a, b) => val(a).localeCompare(val(b)) * state.sort.dir || a.name.localeCompare(b.name));
 }
 
 /* ---------- screens ---------- */
-const NAV = [["library","home","Library"],["add","add","Add SDS"],["categories","cats","Categories"],["print","print","Print / Export"],["settings","gear","Settings"],["about","info","About"]];
-const SUB = {library:"Safety Data Sheet (SDS) Management", detail:"Product Detail / Emergency Quick View", add:"Add / Edit Safety Data Sheet", categories:"Categories", settings:"Settings", about:"About"};
+const NAV = [["library","home","Library"],["add","add","Add SDS"],["categories","cats","Categories"],["print","print","Print / Export"],["notes","list","Handoff Notes"],["settings","gear","Settings"],["about","info","About"]];
+const SUB = {library:"Safety Data Sheet (SDS) Management", detail:"Product Detail / Emergency Quick View", add:"Add / Edit Safety Data Sheet", categories:"Categories", notes:"Manager Handoff Notes", settings:"Settings", about:"About"};
 
 function render() {
   const active = state.view === "detail" ? "library" : state.view;
   $("#nav").innerHTML = NAV.map(([v, i, l]) => `<button class="nav ${v === active ? "on" : ""}" data-act="nav" data-v="${v}">${icon(i)}${l}</button>`).join("");
-  $("#subtitle").textContent = SUB[state.view];
-  $("#view").innerHTML = ({library: vLibrary, detail: vDetail, add: vForm, categories: vCats, settings: vSettings, about: vAbout}[state.view])();
+  $("#subtitle").textContent = state.view === "add" && state.form && state.form.replaceMode ? "Replace SDS PDF" : SUB[state.view];
+  const shown = state.view === "detail" && byId(state.id);
+  $("#pictos").innerHTML = !shown ? "" : (shown.signalWord ? `<span class="signal ${esc(shown.signalWord)}">${esc(shown.signalWord.toUpperCase())}</span>` : "")
+    + pictosOf(shown).map(([k, label]) => `<figure title="${label}">${PICTO[k]}<figcaption>${label}</figcaption></figure>`).join("");
+  $("#view").innerHTML = lockBanner() + ({library: vLibrary, detail: vDetail, add: vForm, categories: vCats, notes: vNotes, settings: vSettings, about: vAbout}[state.view])();
   if (state.view === "library") { const s = $("#q"); if (s && state.focusQ) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }
 }
 
@@ -246,12 +296,12 @@ function vLibrary() {
         ${th("name","Product Name")}${th("manufacturer","Manufacturer")}${th("category","Category")}${th("location","Storage Location")}${th("date","SDS Date")}</tr></thead><tbody>
         ${rows.map(p => `<tr class="${state.sel.has(p.id) ? "sel" : ""}" data-act="open" data-id="${p.id}">
           <td><input type="checkbox" data-act="toggle" data-id="${p.id}" ${state.sel.has(p.id) ? "checked" : ""}></td>
-          <td>${esc(p.name)}${p.missing ? '<span class="tag" style="border-color:#e25a68;color:#ff9aa5">PDF missing</span>' : ""}${hasSummary(p) ? "" : '<span class="tag">summary missing</span>'}</td>
-          <td>${esc(p.manufacturer)}</td><td>${esc(p.category)}</td><td>${esc(p.location)}</td><td>${fmtDate(sdsDate(p))}</td></tr>`).join("")}
+          <td>${esc(p.name)}${p.missing ? '<span class="tag red">PDF missing</span>' : ""}${p.needsReview ? '<span class="tag blue">needs review</span>' : ""}${(state.lib.integrity || {})[p.id] === "changed" ? '<span class="tag red">file changed</span>' : ""}${summaryState(p).tag ? `<span class="tag ${summaryState(p).cls}">${summaryState(p).tag}</span>` : ""}</td>
+          <td>${esc(p.manufacturer)}</td><td>${esc(p.category)}</td><td>${esc(p.location)}</td><td>${p.revisionDate ? sdsDate(p) : '<span class="hint">Unknown</span>'}</td></tr>`).join("")}
       </tbody></table>`;
-  return `
+  return notesBanner() + binderNote() + `
   <div class="row">
-    <div class="search">${icon("search")}<input id="q" class="field" placeholder="Search by product name, manufacturer, supplier or tag..." value="${esc(state.q)}"></div>
+    <div class="search">${icon("search")}<input id="q" class="field" placeholder="Search by product name, other name, manufacturer, supplier or tag..." value="${esc(state.q)}"></div>
     <label>Category:</label>
     <select id="cat" class="field" style="width:210px"><option value="">All Categories</option>
       ${state.lib.categories.map(c => `<option ${c === state.cat ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
@@ -271,12 +321,39 @@ function vLibrary() {
   </div>`;
 }
 
+function binderNote() {
+  if (!state.lib.products.length && !state.lib.binder) return "";
+  const d = binderDiff(), names = a => a.map(p => esc(p.name || p)).join(", ");
+  const lb = state.lib.lastBuild, can = lb && lb.complete && !lb.confirmed;
+  const confirm = can ? `<button class="btn small" data-act="binder-mark">Confirm Binder Updated...</button>` : "";
+  const made = !lb || lb.confirmed ? "" : lb.complete
+    ? ` A complete ${lb.scope === "all" ? "book" : lb.scope === "index" ? "index" : "set of sheets"} was assembled ${fmtDate(lb.at)} (${lb.pages} pages). Once it is printed and in the binder, confirm it.`
+    : ` <b>The last book assembled (${fmtDate(lb.at)}) was incomplete</b>${(lb.missing || []).length ? ", missing: " + esc(lb.missing.join(", ")) : ""}. Fix those sheets and print again.`;
+  if (!d) return `<div class="note warn"><span class="grow"><b>Paper binder:</b> not recorded yet. Print the entire book and put it in the binder.${made}</span>${confirm}</div>`;
+  const when = fmtDate(state.lib.binder.updatedAt), pages = state.lib.binder.pages;
+  if (!d.any) return `<div class="note ok"><span class="grow"><b>Paper binder is up to date.</b> Confirmed by a manager ${when}${pages ? `, ${pages} pages` : ""}.</span></div>`;
+  const parts = [];
+  if (d.add.length) parts.push(`<b>Add:</b> ${names(d.add)}`);
+  if (d.replace.length) parts.push(`<b>Replace:</b> ${names(d.replace)}`);
+  if (d.pull.length) parts.push(`<b>Take out:</b> ${names(d.pull)}`);
+  if (d.index || d.add.length || d.pull.length) parts.push("<b>Reprint the index.</b>");
+  return `<div class="note warn"><span class="grow"><b>Paper binder is out of date</b> (last confirmed ${when}). ${parts.join(" &nbsp;·&nbsp; ")}${made}</span>
+    ${d.add.length + d.replace.length ? `<button class="btn small" data-act="binder-select">Select Sheets to Print</button>` : ""}${d.pull.length ? `<button class="btn small" data-act="binder-pulled">Sheets Taken Out</button>` : ""}${confirm}</div>`;
+}
+
 function vDetail() {
   const p = byId(state.id);
   if (!p) { state.view = "library"; return vLibrary(); }
   const line = (label, v) => (v || "").trim() ? `<b>${label}:</b> ${esc(v.trim())}\n` : "";
   const aid = line("Eyes", p.firstAidEyes) + line("Skin", p.firstAidSkin) + line("Inhalation", p.firstAidInhalation) + line("Swallowed", p.firstAidSwallowed);
   const none = `<p class="none">Not entered yet. Click Edit to add it, or read the full sheet.</p>`;
+  const st = summaryState(p);
+  const verify = st.k === "ok"
+    ? `<div class="note ok"><span class="grow"><b>Summary verified</b> ${fmtDate(p.summaryVerifiedAt)}${p.summaryVerifiedBy ? " by " + esc(p.summaryVerifiedBy) : ""}, against the SDS ${p.summarySourceRevision ? "revised " + fmtDate(p.summarySourceRevision) : "(revision date unknown)"}.</span></div>`
+    : st.k === "recheck" ? `<div class="note bad"><span class="grow"><b>The PDF was replaced after this summary was checked.</b> Rely on the full sheet until a manager re-checks the summary (Edit).</span></div>`
+    : st.k === "unverified" ? `<div class="note warn"><span class="grow"><b>This summary has not been verified against the SDS.</b> Rely on the full sheet until a manager checks it (Edit).</span></div>`
+    : "";
+  const pics = pictosOf(p).map(([, l]) => l).join(", ");
   return `
   <div class="bar">${esc(p.name)}</div>
   <div class="detail">
@@ -285,16 +362,21 @@ function vDetail() {
         <div class="panel grow"><dl>
           <dt>Manufacturer:</dt><dd>${esc(p.manufacturer) || "—"}</dd>
           <dt>Supplier:</dt><dd>${esc(p.supplier) || "—"}</dd>
+          ${(p.aliases || "").trim() ? `<dt>Also known as:</dt><dd>${esc(p.aliases)}</dd>` : ""}
           <dt>Category:</dt><dd>${esc(p.category) || "—"}</dd>
           ${(p.tags || "").trim() ? `<dt>Also used for:</dt><dd>${esc(p.tags)}</dd>` : ""}
           <dt>Storage Location:</dt><dd>${esc(p.location) || "—"}</dd>
-          <dt>SDS Revision Date:</dt><dd>${fmtDate(p.revisionDate) || "—"}</dd>
-          <dt>Last Updated:</dt><dd>${fmtDate(p.updatedAt)}</dd>
+          <dt>SDS Revision Date:</dt><dd>${fmtDate(p.revisionDate) || "Unknown"}</dd>
+          <dt>Record Last Edited:</dt><dd>${fmtDate(p.updatedAt)}</dd>
         </dl></div>
         <div class="poison"><span>Poison Control</span><strong>1-800-222-1222</strong><span>Emergency: 911</span></div>
       </div>
+      ${p.needsReview ? `<div class="note warn"><span class="grow"><b>Needs review.</b> This PDF was copied into the folder. Click Edit and fill in the manufacturer, storage location and SDS revision date.</span></div>` : ""}
+      ${p.missing ? `<div class="note bad"><span class="grow"><b>The PDF for this product is missing from the sheets folder.</b> Use Settings, Clean Up, Replace to add it again.</span></div>` : ""}
+      ${(state.lib.integrity || {})[p.id] === "changed" ? `<div class="note bad"><span class="grow"><b>This PDF is not the file that was added.</b> It was changed outside the program. Open it and check it. If it is the right sheet, accept it; the binder will then show this sheet as needing a reprint.</span><button class="btn small" data-act="integ-accept" data-id="${p.id}">Accept This File</button></div>` : ""}
+      ${verify}
       <div class="panel sum">
-        <div class="blk">${PICTO.bang}<div><h3>Hazard Warnings</h3>${(p.hazards || "").trim() ? `<p>${esc(p.hazards)}</p>` : none}</div></div>
+        <div class="blk">${PICTO.bang}<div><h3>Hazard Warnings${p.signalWord ? " — " + esc(p.signalWord.toUpperCase()) : ""}</h3>${pics ? `<p><b>Pictograms on the SDS:</b> ${pics}</p>` : ""}${(p.hazards || "").trim() ? `<p>${esc(p.hazards)}</p>` : pics || p.signalWord ? "" : none}</div></div>
         <div class="blk">${PICTO.cross}<div><h3>First Aid</h3>${aid ? `<p>${aid}</p>` : none}</div></div>
         <div class="blk">${PICTO.ppe}<div><h3>Protective Equipment (PPE)</h3>${(p.ppe || "").trim() ? `<p>${esc(p.ppe)}</p>` : none}</div></div>
       </div>
@@ -303,33 +385,39 @@ function vDetail() {
   </div>
   <div class="row">
     <button class="btn" data-act="print-one">${icon("print")}Print This Sheet</button>
+    <button class="btn" data-act="emerg">${icon("warn")}Emergency Sheet</button>
     <button class="btn" data-act="edit">${icon("edit")}Edit</button>
-    <button class="btn" data-act="edit" data-pick="1">${icon("swap")}Replace PDF</button>
-    <button class="btn wine" data-act="remove">${icon("trash")}Remove</button>
     <span class="grow"></span>
     <button class="btn" data-act="nav" data-v="library">${icon("back")}Back to Library</button>
   </div>`;
 }
 
+function remembered(k, v) { try { if (v === undefined) return localStorage.getItem("sds." + k) || ""; localStorage.setItem("sds." + k, v); } catch (e) {} return ""; }
 const locations = () => [...new Set([...(state.lib.locations || []), ...state.lib.products.map(p => (p.location || "").trim()).filter(Boolean)])];
-function blankForm() { return {id: null, name: "", manufacturer: "", supplier: "", tags: "", category: state.lib.categories[0] || state.lib.catchAll, location: "", revisionDate: "", hazards: "", firstAidEyes: "", firstAidSkin: "", firstAidInhalation: "", firstAidSwallowed: "", ppe: "", pages: 0, file: null, fileNote: ""}; }
+function blankForm() { return {id: null, name: "", manufacturer: "", supplier: "", aliases: "", tags: "", category: state.lib.categories[0] || state.lib.catchAll, location: "", revisionDate: "", pictograms: [], signalWord: "", verify: false, verifiedBy: remembered("by"), replaceMode: false, hazards: "", firstAidEyes: "", firstAidSkin: "", firstAidInhalation: "", firstAidSwallowed: "", ppe: "", pages: 0, file: null, fileNote: ""}; }
 
 function vForm() {
   const f = state.form || (state.form = blankForm());
   const inp = (k, ph = "") => `<input class="field" data-f="${k}" value="${esc(f[k])}" placeholder="${ph}">`;
   const ta = (k, ph) => `<textarea class="field" rows="2" data-f="${k}" placeholder="${ph}">${esc(f[k])}</textarea>`;
+  const st = f.id ? summaryState(byId(f.id) || f) : {k: "none"};
+  const status = st.k === "ok" ? `Currently verified ${fmtDate(f.summaryVerifiedAt)}${f.summaryVerifiedBy ? " by " + esc(f.summaryVerifiedBy) : ""}. Changing the summary removes that until it is checked again.`
+    : st.k === "recheck" ? "The PDF was replaced after the last check. Compare the summary with the new sheet, then tick the box."
+    : "Not verified yet.";
   const fileText = f.file ? `<span class="file">${esc(f.file.name)}</span><small>${esc(f.fileNote)}</small>`
-    : f.id ? `<small>Current PDF is kept.<br>Drop a new PDF here only to replace it.</small>`
+    : f.replaceMode ? `<small>Choose the new PDF for<br><b>${esc(f.name)}</b>.<br>The current one is kept in the removed folder.</small>`
+    : f.id ? `<small>Current PDF is kept.<br>To replace it, use Settings, Clean Up.</small>`
     : `<small>Drag and drop a PDF file here<br>or click Browse...</small>`;
   return `
   <div class="form">
-    <div class="drop" id="drop" data-act="browse">${icon("up")}<b>${f.id ? "Replace SDS PDF" : "Upload SDS PDF"}${f.id ? "" : ' <span class="req">*</span>'}</b>${fileText}
-      <button class="btn small" type="button">Browse...</button>
+    <div class="drop" id="drop" data-act="browse">${icon("up")}<b>${f.replaceMode ? "New SDS PDF" : f.id ? "SDS PDF" : "Upload SDS PDF"}${f.id && !f.replaceMode ? "" : ' <span class="req">*</span>'}</b>${fileText}
+      ${f.id && !f.replaceMode ? "" : '<button class="btn small" type="button">Browse...</button>'}
       <input type="file" id="file" accept="application/pdf,.pdf" hidden></div>
     <div class="fields">
       <label>Product Name: <span class="req">*</span></label>${inp("name")}
       <label>Manufacturer:</label>${inp("manufacturer", "The company named on the SDS, e.g. Ecolab Inc.")}
       <label>Supplier:</label>${inp("supplier", "Who you buy it from, e.g. Sysco")}
+      <label>Also Known As:</label>${inp("aliases", "Other names staff or the supplier use, separated by commas")}
       <label>Category:</label><div><select class="field" data-f="category">${state.lib.categories.map(c => `<option ${c === f.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
         <div class="hint" id="cathelp" style="margin-top:3px">${esc(CAT_HELP[f.category] || "")}</div></div>
       <label>Also Used For:</label>${inp("tags", "Optional tags, separated by commas, e.g. Fryer cleaner, Grill cleaner")}
@@ -341,12 +429,18 @@ function vForm() {
   <div class="sect"><h2>Emergency Summary (At-a-Glance)</h2><div>
     <p class="hint" style="margin:0 0 10px">Optional. Copy the key points from the sheet: Section 2 (hazards), Section 4 (first aid) and Section 8 (protective equipment). You can save now and fill this in later.</p>
     <div class="fields">
+      <label>Signal Word:</label><select class="field" data-f="signalWord" style="width:190px">${["", "Warning", "Danger"].map(v => `<option value="${v}" ${v === f.signalWord ? "selected" : ""}>${v || "None on the SDS"}</option>`).join("")}</select>
+      <label>Hazard Pictograms:</label><div><div class="picgrid">${GHS.map(([k, label]) => `<label><input type="checkbox" data-pic="${k}" ${f.pictograms.includes(k) ? "checked" : ""}>${PICTO[k]}${label}</label>`).join("")}</div>
+        <div class="hint" style="margin-top:4px">Tick only the red diamonds printed in Section 2 of this product's SDS. Leave all unticked if it shows none.</div></div>
       <label>Hazards:</label>${ta("hazards", "e.g. Causes serious eye irritation. May cause skin irritation.")}
       <label>First Aid — Eyes:</label>${ta("firstAidEyes", "e.g. Rinse with water for at least 15 minutes.")}
       <label>First Aid — Skin:</label>${ta("firstAidSkin", "e.g. Wash with soap and water.")}
       <label>First Aid — Inhalation:</label>${ta("firstAidInhalation", "e.g. Move to fresh air.")}
       <label>First Aid — Swallowed:</label>${ta("firstAidSwallowed", "e.g. Rinse mouth. Do NOT induce vomiting. Call Poison Control.")}
       <label>Protective Equipment:</label>${ta("ppe", "e.g. Chemical-resistant gloves, safety goggles.")}
+      <label>Verification:</label><div>
+        <label style="display:flex;gap:9px;align-items:center;font-weight:400;cursor:pointer"><input type="checkbox" data-fc="verify" ${f.verify ? "checked" : ""}>I have checked this summary against the manufacturer's SDS${f.revisionDate ? " (revised " + fmtDate(f.revisionDate) + ")" : ""}</label>
+        <div class="row" style="margin-top:6px"><span>Checked by:</span><input class="field" data-f="verifiedBy" value="${esc(f.verifiedBy)}" placeholder="Name or initials" style="width:220px" maxlength="40"><span class="hint grow">${status}</span></div></div>
     </div></div></div>
   <div class="row" style="justify-content:center">
     <button class="btn green big" data-act="save">${icon("save")}Save</button>
@@ -370,29 +464,232 @@ function vCats() {
   </div>`;
 }
 
+const TABS = [["storage","Storage"],["backup","Backup &amp; Restore"],["transfer","Import &amp; Export"],["cleanup","Clean Up"],["recovery","Recovery"],["diagnostics","Diagnostics"]];
+function loadTab() { if (state.view !== "settings") return; const f = {backup: loadBackups, recovery: loadRecovery, diagnostics: loadDiag}[state.tab]; if (f) f(); }
+async function loadBackups() { state.backups = await api("/api/backups"); if (state.view === "settings") render(); }
+async function loadRecovery() { state.rec = await api("/api/recovery"); if (state.view === "settings" && state.tab === "recovery") render(); }
+async function loadDiag() { state.diag = await api("/api/diagnostics"); if (state.view === "settings" && state.tab === "diagnostics") render(); }
 function vSettings() {
-  return `
-  <div class="panel" style="max-width:760px">
-    <h3 style="margin-top:0">Where the sheets are stored</h3>
-    <p>Every PDF and the product list are kept in this folder on this computer:</p>
-    <p><code>${esc(state.lib.dataFolder)}</code></p>
-    <p>The library is made of ordinary files, with no database. The PDFs sit in the “sheets” folder under readable names, and the product details are in “library.json”. A PDF copied straight into the “sheets” folder shows up in the library as a new product, ready for its details to be filled in.</p>
-    <p class="hint">Removed and replaced sheets are moved into its “removed” folder rather than deleted, so they can be recovered.</p>
-    <div class="row"><button class="btn" data-act="open-folder">${icon("folder")}Open Data Folder</button></div>
+  const tabs = `<div class="tabs">${TABS.map(([k, l]) => `<button class="${state.tab === k ? "on" : ""}" data-act="tab" data-t="${k}">${l}</button>`).join("")}</div>`;
+  const body = ({storage: tStorage, backup: tBackup, transfer: tTransfer, cleanup: tCleanup, recovery: tRecovery, diagnostics: tDiag}[state.tab] || tStorage)();
+  return tabs + body;
+}
+function tCleanup() {
+    const live = [...state.lib.products].sort((a, b) => a.name.localeCompare(b.name)), gone = state.lib.removed || [];
+    const head = last => `<thead><tr>${["Product Name", "Manufacturer", "Category", last].map(h => `<th class="nosort" style="width:auto">${h}</th>`).join("")}<th class="nosort" style="width:230px"></th></tr></thead>`;
+    return `
+  <div class="panel">
+    <h3 style="margin-top:0">Products in the library</h3>
+    <p class="hint">Replace swaps in a newer PDF from the manufacturer and keeps the old one. Remove takes a discontinued product out of the library and the printed book.</p>
+    ${live.length ? `<table class="plain">${head("SDS Date")}<tbody>
+      ${live.map(p => `<tr><td>${esc(p.name)}${p.missing ? '<span class="tag red">PDF missing</span>' : ""}</td><td>${esc(p.manufacturer)}</td><td>${esc(p.category)}</td><td>${sdsDate(p)}</td>
+        <td style="text-align:right;white-space:nowrap"><button class="btn small" data-act="replace" data-id="${p.id}">${icon("swap")}Replace</button> <button class="btn small wine" data-act="remove" data-id="${p.id}">${icon("trash")}Remove</button></td></tr>`).join("")}
+    </tbody></table>` : `<p class="hint">The library is empty.</p>`}
   </div>
-  <div class="panel" style="max-width:760px">
-    <h3 style="margin-top:0">Backup</h3>
-    <p>Creates one zip file containing the whole library in the “SDS Backups” folder next to the program. Copy it to a USB drive or cloud folder so the library survives if this computer fails.</p>
-    <div class="row"><button class="btn green" data-act="backup">${icon("down")}Create Backup</button></div>
+  <div class="panel">
+    <h3 style="margin-top:0">Removed products</h3>
+    ${gone.length ? `<table class="plain">${head("Removed")}<tbody>
+      ${gone.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.manufacturer)}</td><td>${esc(p.category)}</td><td>${fmtDate(p.removedAt)}</td>
+        <td style="text-align:right;white-space:nowrap">${p.archivedFile ? `<button class="btn small" data-act="view-removed" data-id="${p.id}">View PDF</button> ` : ""}<button class="btn small green" data-act="restore-product" data-id="${p.id}">Restore</button></td></tr>`).join("")}
+    </tbody></table>` : `<p class="hint">Nothing has been removed. Removed products are listed here with their details so they can be restored.</p>`}
   </div>`;
+}
+function tStorage() {
+  return `
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Where the sheets are stored</h3>
+    <p>Every PDF and the product list are kept in this folder:</p>
+    <p><code>${esc(state.lib.dataFolder)}</code></p>
+    <p>The library is made of ordinary files, with no database. The PDFs sit in the “sheets” folder under readable names, and the product details are in “library.json”. A PDF copied straight into the “sheets” folder shows up in the library marked “needs review”.</p>
+    <div class="row"><button class="btn" data-act="open-folder">${icon("folder")}Open Data Folder</button><button class="btn" data-act="folder-ask">${icon("swap")}Change Location...</button></div>
+    <p class="hint" style="margin-bottom:0">The library can live in a OneDrive, SharePoint or network folder. Only open the program on one computer at a time when it does, so two people never save over each other.</p>
+  </div>`;
+}
+function tBackup() {
+  const b = state.backups;
+  return `
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Backup</h3>
+    <p>Creates one zip file containing the whole library in the “SDS Backups” folder beside the library folder. Copy it to a USB drive or cloud folder so the library survives if this computer fails.</p>
+    <div class="row"><button class="btn green" data-act="backup">${icon("down")}Create Backup</button><button class="btn" data-act="open-backups">${icon("folder")}Open Backups Folder</button></div>
+  </div>
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Restore from a backup</h3>
+    <p class="hint">To restore a backup kept on a USB drive or another computer, copy its zip file into the backups folder first, then come back to this screen.</p>
+    ${!b ? `<p class="hint">Looking for backups...</p>` : !b.backups.length ? `<p class="hint">No backups found in ${esc(b.folder)}.</p>`
+      : b.backups.map(x => `<div class="catrow"><div class="grow"><b>${esc(x.file)}</b><div class="hint">Created ${fmtDate(x.created)} at ${esc(x.created.slice(11, 16))} · ${(x.size / 1048576).toFixed(1)} MB</div></div><button class="btn small" data-act="restore-ask" data-file="${esc(x.file)}">Restore...</button></div>`).join("")}
+  </div>`;
+}
+function tTransfer() {
+  return `
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Export</h3>
+    <p>Save the product list as a spreadsheet that opens in Excel, or save the whole library (every PDF and the product list) as one zip file to keep or move to another computer.</p>
+    <div class="row"><a class="btn" href="/api/export/products.csv" download>${icon("down")}Product List (Excel / CSV)</a><a class="btn" href="/api/export/library.zip" download>${icon("down")}Whole Library (zip)</a></div>
+  </div>
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Import many PDFs at once</h3>
+    <p>Choose SDS PDFs from Sysco, a supplier or a folder. Each one is added to the library marked “needs review”, so a manager can fill in the details. PDFs already in the library, and files that are not PDFs, are skipped.</p>
+    <div class="row"><button class="btn green" data-act="import-pdfs">${icon("up")}Choose PDFs...</button></div>
+    <input type="file" id="importpdfs" accept="application/pdf,.pdf" multiple hidden>
+  </div>
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Import a library zip</h3>
+    <p>Choose a library zip made by this program, from a backup or another computer. It is checked and placed in the backups list. Nothing changes until you restore it from Backup &amp; Restore.</p>
+    <div class="row"><button class="btn" data-act="import-zip">${icon("up")}Choose Library Zip...</button></div>
+    <input type="file" id="importzip" accept=".zip,application/zip" hidden>
+  </div>`;
+}
+function tRecovery() {
+  const r = state.rec;
+  if (!r) return `<div class="panel"><p class="hint">Looking...</p></div>`;
+  const ps = r.previousSave || {};
+  return `
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Go back one save</h3>
+    <p>Every time the library is saved, the version before it is kept. If something was changed by mistake, this puts that earlier version back. The current one is kept too, in case you change your mind.</p>
+    ${ps.damaged ? `<p><b>The previous-save copy is damaged and cannot be used.</b></p>` : ps.exists ? `<p class="hint">Previous save from ${fmtDate(ps.modified)} at ${esc(String(ps.modified).slice(11, 16))}: ${ps.products} product${ps.products === 1 ? "" : "s"}${ps.removed ? `, ${ps.removed} removed` : ""}.</p><div class="row"><button class="btn wine" data-act="rec-prev">${icon("back")}Go Back One Save...</button></div>` : `<p class="hint">There is no earlier save yet.</p>`}
+  </div>
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Rebuild from the PDFs in the folder</h3>
+    <p>If the product list is lost or damaged but the PDFs are still in the “sheets” folder, this sets the damaged list aside and builds a new one from the PDFs. Every product comes back marked “needs review”, because the details were in the lost list.</p>
+    <div class="row"><button class="btn wine" data-act="rec-rebuild">${icon("swap")}Rebuild Library...</button></div>
+  </div>
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Old PDFs not linked to a product</h3>
+    <p class="hint">PDFs kept in the “removed” folder that no removed product points to, for example after a rebuild or a restore.</p>
+    ${(r.unlinked || []).length ? r.unlinked.map(x => `<div class="catrow"><div class="grow"><b>${esc(x.title)}</b><div class="hint">${esc(x.file)}</div></div><button class="btn small green" data-act="rec-unlinked" data-file="${esc(x.file)}">Add Back to Library</button></div>`).join("") : `<p class="hint">None.</p>`}
+  </div>
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Libraries set aside by a restore</h3>
+    <p class="hint">Restoring a backup never deletes the library it replaces. It is moved into the backups folder.</p>
+    ${(r.beforeRestore || []).length ? r.beforeRestore.map(n => `<div>${esc(n)}</div>`).join("") : `<p class="hint">None.</p>`}
+    <div class="row" style="margin-top:8px"><button class="btn" data-act="open-backups">${icon("folder")}Open Backups Folder</button></div>
+  </div>`;
+}
+function tDiag() {
+  const d = state.diag;
+  if (!d) return `<div class="panel"><p class="hint">Checking...</p></div>`;
+  const cls = {ok: "ok", warn: "warn", bad: "bad"}, mark = {ok: "OK", warn: "Check", bad: "Problem"};
+  const rows = state.integ;
+  return `
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Program health <span class="hint">version ${esc(d.version)}</span></h3>
+    ${d.checks.map(c => `<div class="note ${cls[c.status] || "warn"}" style="margin-bottom:6px"><b style="min-width:70px">${mark[c.status] || c.status}</b><span class="grow"><b>${esc(c.name)}.</b> ${esc(c.detail)}</span></div>`).join("")}
+    <div class="row" style="margin-top:10px"><button class="btn" data-act="diag-run">${icon("swap")}Check Again</button><button class="btn" data-act="diag-save">${icon("down")}Save Report</button><button class="btn" data-act="diag-copy">Copy Report</button></div>
+    <p class="hint" style="margin-bottom:0">Save the report and send it to whoever supports this program. It lists the computer, the folders and the checks above, and no safety data.</p>
+  </div>
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Document check</h3>
+    <p>Each PDF is fingerprinted when it is added. This reads every PDF again and shows any that no longer match, which means the file was changed or damaged outside the program.</p>
+    <div class="row"><button class="btn green" data-act="integ-run">${icon("search")}Check Every PDF</button></div>
+    ${!rows ? "" : (() => { const bad = rows.filter(r => r.status !== "ok");
+      return !bad.length ? `<p style="margin-bottom:0"><b>All ${rows.length} PDFs match their fingerprints.</b></p>`
+        : `<table class="plain" style="margin-top:10px"><tbody>${bad.map(r => `<tr><td>${esc(r.name)}</td><td>${r.status === "missing" ? "PDF missing" : "File changed"}</td><td style="text-align:right">${r.status === "changed" ? `<button class="btn small" data-act="integ-accept" data-id="${r.id}">Accept This File</button> ` : ""}<button class="btn small" data-act="open-product" data-id="${r.id}">Open</button></td></tr>`).join("")}</tbody></table>`; })()}
+  </div>`;
+}
+
+
+/* ---------- handoff notes ---------- */
+const openNotes = () => (state.lib.notes || []).filter(n => !n.done);
+function notesBanner() {
+  const n = openNotes().length; if (!n) return "";
+  return `<div class="note warn"><span class="grow"><b>${n} handoff note${n === 1 ? "" : "s"} from other managers</b> ${n === 1 ? "is" : "are"} waiting to be read.</span><button class="btn small" data-act="nav" data-v="notes">Read Notes</button></div>`;
+}
+function vNotes() {
+  const all = [...(state.lib.notes || [])].reverse(), open = all.filter(n => !n.done), done = all.filter(n => n.done);
+  const when = s => `${fmtDate(s)} ${esc(String(s || "").slice(11, 16))}`;
+  return `
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Leave a note for the next manager</h3>
+    <p class="hint">Things the next person should know: a sheet that is on order, a binder page that needs reprinting, a product that was discontinued.</p>
+    <textarea id="notetext" class="field" rows="3" maxlength="2000" placeholder="Write the note here..."></textarea>
+    <div class="row" style="margin-top:8px"><label style="margin:0">Your name:</label><input id="noteby" class="field" style="width:200px" value="${esc(remembered("by"))}"><button class="btn green" data-act="note-add">${icon("plus")}Add Note</button></div>
+  </div>
+  <div class="panel" style="max-width:860px">
+    <h3 style="margin-top:0">Open notes</h3>
+    ${open.length ? open.map(n => `<div class="catrow"><div class="grow"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="hint">${esc(n.by) || "A manager"}, ${when(n.at)}</div></div><button class="btn small green" data-act="note-done" data-id="${n.id}">Done</button></div>`).join("") : `<p class="hint">No open notes.</p>`}
+  </div>
+  ${done.length ? `<div class="panel" style="max-width:860px"><h3 style="margin-top:0">Finished notes</h3>${done.map(n => `<div class="catrow"><div class="grow"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="hint">${esc(n.by) || "A manager"}, ${when(n.at)} · finished ${when(n.doneAt)}${n.doneBy ? " by " + esc(n.doneBy) : ""}</div></div><button class="btn small" data-act="note-reopen" data-id="${n.id}">Reopen</button></div>`).join("")}</div>` : ""}`;
+}
+
+/* ---------- the "someone is editing" lock ---------- */
+function lockBanner() {
+  const L = state.lock, ro = L ? L.readOnly : state.lib.readOnly;
+  if (!ro) return "";
+  const h = L && L.holder;
+  return `<div class="note bad" style="margin-bottom:10px"><span class="grow"><b>View only.</b> ${h ? esc(h.who) + " is editing the library" + (h.since ? " (since " + fmtDate(h.since) + " " + esc(h.since.slice(11, 16)) + ")" : "") : "The library is being edited on another computer"}. You can search, view and print, but changes are turned off here so nothing gets overwritten.</span>
+    <button class="btn small green" data-act="lock-acquire">Start Editing</button><button class="btn small" data-act="lock-takeover-ask">Take Over...</button></div>`;
+}
+async function refreshLock() {
+  const was = JSON.stringify(state.lock && [state.lock.readOnly, state.lock.holder && state.lock.holder.who]);
+  state.lock = await api("/api/lock");
+  if (JSON.stringify([state.lock.readOnly, state.lock.holder && state.lock.holder.who]) !== was && !$("#modal").className && !(state.view === "add")) render();
+}
+
+async function sha256(buf) { const d = await crypto.subtle.digest("SHA-256", buf); return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, "0")).join(""); }
+function wrapText(text, font, size, max) {
+  const out = [];
+  for (const para of clean(text).split(/\s*\n\s*/)) {
+    let line = "";
+    for (const w of para.split(" ")) { const tryL = line ? line + " " + w : w; if (font.widthOfTextAtSize(tryL, size) > max && line) { out.push(line); line = w; } else line = tryL; }
+    out.push(line);
+  }
+  return out;
+}
+// One page a manager can hang up or hand to the emergency crew: the summary, with its checked/unchecked status.
+async function emergencySheet(p) {
+  const out = await PDFDocument.create(), F = {r: await out.embedFont(StandardFonts.Helvetica), b: await out.embedFont(StandardFonts.HelveticaBold), t: await out.embedFont(StandardFonts.TimesRomanBold)};
+  const W = PAGE_W, H = PAGE_H, X = 46, MW = W - 2 * X, pg = out.addPage([W, H]); let y = H - 50;
+  pg.drawRectangle({x: X - 6, y: y - 36, width: MW + 12, height: 52, borderColor: RED, borderWidth: 2});
+  centre(pg, "EMERGENCY SHEET", F.t, 30, y - 24, RED); y -= 66;
+  for (const l of wrapText(p.name, F.t, 24, MW)) { pg.drawText(l, {x: X, y, size: 24, font: F.t, color: INK}); y -= 28; }
+  const meta = [p.manufacturer && "Manufacturer: " + p.manufacturer, p.location && "Stored: " + p.location, p.revisionDate && "SDS revision: " + fmtDate(p.revisionDate)].filter(Boolean).join("     ");
+  if (meta) for (const l of wrapText(meta, F.r, 10.5, MW)) { pg.drawText(l, {x: X, y, size: 10.5, font: F.r, color: GREY}); y -= 14; }
+  y -= 8;
+  const st = summaryState(p);
+  if (st.k !== "ok") { pg.drawRectangle({x: X - 6, y: y - 8, width: MW + 12, height: 28, color: RED}); centre(pg, "SUMMARY NOT VERIFIED - READ THE FULL SDS IN THE BINDER", F.b, 11, y + 2, rgb(1, 1, 1)); y -= 34; }
+  const section = (title, body) => {
+    pg.drawRectangle({x: X - 6, y: y - 4, width: MW + 12, height: 18, borderColor: WINE, borderWidth: 1});
+    pg.drawText(clean(title).toUpperCase(), {x: X, y, size: 10.5, font: F.b, color: WINE}); y -= 20;
+    for (const l of wrapText(body || "Not entered. See the full SDS.", F.r, 12, MW)) { pg.drawText(l, {x: X, y, size: 12, font: F.r, color: INK}); y -= 16; }
+    y -= 8;
+  };
+  const pics = pictosOf(p).map(([, l]) => l).join(", ");
+  section("Hazards" + (p.signalWord ? " - " + p.signalWord : ""), [pics && "Pictograms: " + pics, (p.hazards || "").trim()].filter(Boolean).join("\n"));
+  section("First aid", [["Eyes", p.firstAidEyes], ["Skin", p.firstAidSkin], ["Inhalation", p.firstAidInhalation], ["Swallowed", p.firstAidSwallowed]].filter(([, v]) => (v || "").trim()).map(([k, v]) => k + ": " + v.trim()).join("\n"));
+  section("Protective equipment (PPE)", (p.ppe || "").trim());
+  pg.drawLine({start: {x: X, y: 92}, end: {x: W - X, y: 92}, thickness: 1, color: GREY});
+  centre(pg, "Emergency: 911        Poison Control: 1-800-222-1222", F.b, 15, 66, RED);
+  centre(pg, clean(`Quick reference only. The manufacturer's SDS is the authority.  Printed ${longDate()}.`), F.r, 8.5, 44, GREY);
+  out.setTitle("Emergency Sheet - " + clean(p.name));
+  return out.save();
+}
+async function backfillPages() {
+  if (state.lib.readOnly) return;
+  const need = state.lib.products.filter(p => !p.pages && !p.missing); if (!need.length) return;
+  let did = false;
+  for (const p of need) {
+    try {
+      const r = await fetch("/pdf/" + p.id); if (!r.ok) continue;
+      const doc = await PDFDocument.load(await r.arrayBuffer(), {ignoreEncryption: true}), n = doc.getPageCount();
+      if (n) { await api("/api/products/" + p.id + "/pages", {method: "POST", body: JSON.stringify({pages: n})}); did = true; }
+    } catch (e) {}
+  }
+  if (did) { await reload(); if (state.view === "library") render(); }
+}
+async function upload(path, field, files) {
+  const fd = new FormData(); for (const f of files) fd.append(field, f);
+  return api(path, {method: "POST", body: fd});
 }
 
 function vAbout() {
   return `
   <div class="panel" style="max-width:760px">
-    <h3 style="margin-top:0">Muriale's SDS Manager <span class="hint">version 1.2</span></h3>
+    <h3 style="margin-top:0">Muriale's SDS Manager <span class="hint">version ${esc(state.lib.version || "")}</span></h3>
     <p>Keeps the Safety Data Sheet (SDS, formerly MSDS) library for Muriale's Italian Kitchen and prints the paper SDS book.</p>
     <p>${state.lib.products.length} product${state.lib.products.length === 1 ? "" : "s"} in the library.</p>
+    <p class="hint">Several people can use the same library folder. Only one can make changes at a time; everyone else can search, view and print.</p>
     <p><b>Emergency:</b> 911 &nbsp;·&nbsp; <b>Poison Control:</b> 1-800-222-1222</p>
     <p class="hint">The emergency summaries are typed in by a manager as a quick reference. The manufacturer's sheet is always the authority.</p>
   </div>`;
@@ -406,25 +703,30 @@ function removeDialog(p) {
   showModal(`<h2>${icon("warn")}Remove SDS</h2><div class="body">
     <p style="margin-top:0">Are you sure you want to remove this product from the SDS library?</p>
     <div class="box"><dl><dt>Product:</dt><dd>${esc(p.name)}</dd><dt>Manufacturer:</dt><dd>${esc(p.manufacturer) || "—"}</dd><dt>Category:</dt><dd>${esc(p.category) || "—"}</dd></dl></div>
-    <p>The product leaves the library and the printed book. Its PDF is moved to the “removed” folder in case it is needed again.</p></div>
+    <p>The product leaves the library and the printed book. Its details and PDF are kept, and it can be brought back from Settings, Clean Up.</p></div>
     <div class="foot"><button class="btn wine big" data-act="remove-yes">${icon("trash")}Remove</button><button class="btn big" data-act="close">Cancel</button></div>`);
 }
 
-const INDEX_ROWS_FIRST = 33, INDEX_ROWS_NEXT = 38;
-let printOpt = {scope: "all", cover: true, index: true, dividers: true, numbers: false, only: null};
+let printOpt = {scope: "all", cover: true, index: true, dividers: true, numbers: false, eco: false, only: null};
 function printItems() {
-  if (printOpt.only) return [byId(printOpt.only)].filter(Boolean);
   const src = printOpt.scope === "selected" ? state.lib.products.filter(p => state.sel.has(p.id)) : state.lib.products;
   const order = c => { const i = state.lib.categories.indexOf(c); return i < 0 ? 999 : i; };
   return [...src].sort((a, b) => order(a.category) - order(b.category) || a.name.localeCompare(b.name));
 }
+// Index page geometry. The print dialog's estimate and the PDF builder both use
+// indexPageCount, so the two can never disagree about how long the index is.
+const PAGE_W = 612, PAGE_H = 792, IDX = {firstTop: PAGE_H - 122, nextTop: PAGE_H - 50, row: 18, bottom: 50};
+function indexPageCount(rows) {
+  let pages = 1, y = IDX.firstTop - IDX.row;
+  for (let i = 0; i < rows; i++) { if (y < IDX.bottom) { pages++; y = IDX.nextTop - IDX.row; } y -= IDX.row; }
+  return pages;
+}
 function estimate() {
   const items = printItems(), o = printOpt;
-  const idx = n => n <= INDEX_ROWS_FIRST ? 1 : 1 + Math.ceil((n - INDEX_ROWS_FIRST) / INDEX_ROWS_NEXT);
-  if (o.scope === "index") return {n: items.length, pages: idx(items.length)};
+  if (o.scope === "index") return {n: items.length, pages: indexPageCount(items.length)};
   let pages = items.reduce((s, p) => s + (p.pages || 0), 0);
   if (o.cover) pages++;
-  if (o.index) pages += idx(items.length);
+  if (o.index) pages += indexPageCount(items.length);
   if (o.dividers) pages += new Set(items.map(p => p.category)).size;
   return {n: items.length, pages, unknown: items.some(p => !p.pages)};
 }
@@ -436,24 +738,27 @@ function printDialog(scope) {
 function drawPrintDialog() {
   const o = printOpt, e = estimate(), idxOnly = o.scope === "index";
   const radio = (v, label, off) => `<label class="${off ? "off" : ""}"><input type="radio" name="scope" value="${v}" ${o.scope === v ? "checked" : ""} ${off ? "disabled" : ""}>${label}</label>`;
-  const box = (k, label) => `<label class="${idxOnly ? "off" : ""}"><input type="checkbox" data-o="${k}" ${o[k] ? "checked" : ""} ${idxOnly ? "disabled" : ""}>${label}</label>`;
+  const box = (k, label, off) => `<label class="${off ? "off" : ""}"><input type="checkbox" data-o="${k}" ${o[k] || off === "on" ? "checked" : ""} ${off ? "disabled" : ""}>${label}</label>`;
   showModal(`<h2>${icon("print")}Print SDS Book</h2><div class="body">
     <div class="cols"><div><h4>What Would You Like to Print?</h4>
       ${radio("all", `Entire Book (all ${state.lib.products.length} SDS sheets)`)}
       ${radio("selected", `Selected Sheets Only (${state.sel.size} product${state.sel.size === 1 ? "" : "s"})`, !state.sel.size)}
       ${radio("index", "Index Only")}</div>
-    <div><h4>Include in Printout</h4>
-      ${box("cover", "Cover Page (Muriale's Logo)")}${box("index", "Index of Chemicals")}${box("dividers", "Category Divider Pages")}${box("numbers", "Page Numbers")}</div></div>
-    <div class="box"><b>Print Summary</b><br>Products: ${e.n} &nbsp;&nbsp;&nbsp; Estimated Pages: ${e.pages}${e.unknown ? "+" : ""}
-      <br><span style="font-size:13px">${idxOnly ? "(Index pages only)" : "(Includes everything ticked above and all SDS sheets)"}</span></div>
+    <div><h4>${idxOnly ? "The Book the Index Is For" : "Include in Printout"}</h4>
+      ${box("cover", "Cover Page (Muriale's Logo)")}${box("index", "Index of Chemicals", idxOnly ? "on" : "")}${box("dividers", "Category Divider Pages")}${box("numbers", "Add Binder Page Numbers (shrinks each page 3%)")}${box("eco", "Printer-friendly (saves ink)")}</div></div>
+    <div class="box"><b>Print Summary</b><br>Products: ${e.n} &nbsp;&nbsp;&nbsp; Estimated Pages: ${e.unknown ? "at least " : ""}${e.pages}
+      <br><span style="font-size:13px">${idxOnly ? "Index pages only. Its page references match a book printed with the options ticked above." : o.numbers ? "Each page gets a binder page number in a strip at the bottom. Manufacturer pages are shrunk about 3% to make room, so the number never covers anything on the sheet." : "The manufacturer's pages are copied exactly as they are, with nothing added to them. The index lists the page each SDS starts on, counting every page of the book."}
+      The exact page count is confirmed on the preview before anything prints.</span></div>
     <p id="busy" style="margin:0;min-height:20px;font-weight:600"></p></div>
-    <div class="foot"><button class="btn green big" data-act="print-go" ${e.n ? "" : "disabled"}>${icon("print")}Print</button><button class="btn big" data-act="close">${icon("x")}Cancel</button></div>`);
+    <div class="foot"><button class="btn green big" data-act="print-go" ${e.n ? "" : "disabled"}>${icon("print")}Preview &amp; Print</button><button class="btn big" data-act="close">${icon("x")}Cancel</button></div>`);
 }
 
 /* ---------- building the printed book ---------- */
-const {PDFDocument, StandardFonts, rgb} = PDFLib;
-const WINE = rgb(0.48, 0.07, 0.13), GOLD = rgb(0.72, 0.56, 0.22), INK = rgb(0.1, 0.1, 0.1), GREY = rgb(0.45, 0.45, 0.45);
+const {PDFDocument, StandardFonts, rgb, degrees} = PDFLib;
+const WINE = rgb(0.48, 0.07, 0.13), GOLD = rgb(0.72, 0.56, 0.22), INK = rgb(0.1, 0.1, 0.1), GREY = rgb(0.35, 0.35, 0.35), RED = rgb(0.78, 0.05, 0.1);
 // The built-in PDF fonts only hold basic Latin characters, so anything else is swapped out.
+const BAND = 22;
+const rotOf = pg => ((pg.getRotation().angle % 360) + 360) % 360;
 const clean = s => String(s ?? "").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, "-").replace(/®|™/g, "").replace(/\s+/g, " ").replace(/[^\x20-\x7E\xA1-\xFF]/g, "?").trim();
 function fit(text, font, size, max) {
   let t = clean(text);
@@ -463,134 +768,240 @@ function fit(text, font, size, max) {
 }
 const centre = (page, text, font, size, y, color = INK) => page.drawText(text, {x: (page.getWidth() - font.widthOfTextAtSize(text, size)) / 2, y, size, font, color});
 
-async function buildBook(opt, progress = () => {}) {
-  const items = opt.items, out = await PDFDocument.create();
-  const F = {r: await out.embedFont(StandardFonts.Helvetica), b: await out.embedFont(StandardFonts.HelveticaBold), t: await out.embedFont(StandardFonts.TimesRomanBold)};
-  const logo = await out.embedPng(await (await fetch("logo.png")).arrayBuffer());
-  const W = 612, H = 792, today = longDate(), failed = [];
-  out.setTitle("Muriale's SDS Book - " + today); out.setAuthor("Muriale's Italian Kitchen");
+// loadSheet fetches one product's PDF and says plainly why it cannot be used, if it cannot.
+async function loadSheet(p) {
+  let bytes;
+  try { const r = await fetch("/pdf/" + p.id); if (!r.ok) throw 0; bytes = await r.arrayBuffer(); }
+  catch (e) { return {p, why: "its PDF file is missing from the library folder"}; }
+  if (p.sha256 && await sha256(bytes) !== p.sha256) return {p, why: "its PDF is not the file that was added (it was changed outside the program). Check it in Settings, Diagnostics, then accept it or replace it"};
+  let doc;
+  try { doc = await PDFDocument.load(bytes, {ignoreEncryption: true}); }
+  catch (e) { return {p, why: "its PDF is damaged and cannot be read"}; }
+  if (doc.isEncrypted) return {p, why: "its PDF is password-protected, so it cannot be combined into a book. Print it on its own from its product page"};
+  let n = 0; try { n = doc.getPageCount(); } catch (e) {}
+  if (!n) return {p, why: "its PDF has no readable pages"};
+  return {p, doc, n};
+}
 
-  if (opt.cover) {
+// stampFooter writes a small binder page number in the bottom right corner of
+// a page as it will be seen, whatever the page's size or rotation. Nothing is
+// painted behind it, so it can never cover the manufacturer's text.
+function stampFooter(pg, text, font) {
+  const size = 7.5, tw = font.widthOfTextAtSize(text, size), box = pg.getCropBox();
+  const rot = ((pg.getRotation().angle % 360) + 360) % 360;
+  const seenWidth = rot % 180 ? box.height : box.width, vx = seenWidth - tw - 20, vy = 9;
+  const at = rot === 90 ? [box.x + box.width - vy, box.y + vx] : rot === 180 ? [box.x + box.width - vx, box.y + box.height - vy]
+    : rot === 270 ? [box.x + vy, box.y + box.height - vx] : [box.x + vx, box.y + vy];
+  pg.drawText(text, {x: at[0], y: at[1], size, font, color: GREY, rotate: degrees(rot)});
+}
+
+// buildBook assembles the PDF. It first opens every sheet, so that it knows the
+// true page counts and any sheet that cannot be included before a single page
+// is drawn. A book with a sheet left out is stamped INCOMPLETE on its cover and index.
+async function buildBook(opt, progress = () => {}) {
+  const items = opt.items, W = PAGE_W, H = PAGE_H, today = longDate();
+  const loaded = [];
+  for (const [i, p] of items.entries()) { progress(`Checking sheet ${i + 1} of ${items.length}...`); loaded.push(await loadSheet(p)); }
+  const good = loaded.filter(x => x.doc), problems = loaded.filter(x => !x.doc).map(x => ({name: x.p.name, why: x.why}));
+  const complete = problems.length === 0;
+
+  // Work out where everything lands before drawing, so the index can cite real page numbers.
+  let page = 0; const starts = {}, dividerBefore = new Set();
+  if (opt.cover) page++;
+  if (opt.index) page += indexPageCount(items.length);
+  let last = null;
+  for (const x of good) {
+    if (opt.dividers && x.p.category !== last) { last = x.p.category; dividerBefore.add(x.p.id); page++; }
+    starts[x.p.id] = page + 1; page += x.n;
+  }
+  const total = page;
+
+  const out = await PDFDocument.create();
+  const F = {r: await out.embedFont(StandardFonts.Helvetica), b: await out.embedFont(StandardFonts.HelveticaBold), t: await out.embedFont(StandardFonts.TimesRomanBold)};
+  const ink = opt.eco ? WINE : rgb(1, 1, 1);
+  const bar = (pg, x, y, w, h) => pg.drawRectangle(opt.eco ? {x, y, width: w, height: h, borderColor: WINE, borderWidth: 1.5} : {x, y, width: w, height: h, color: WINE});
+  const logo = await out.embedPng(await (await fetch("logo.png")).arrayBuffer());
+  out.setTitle((complete ? "" : "INCOMPLETE - ") + "Muriale's SDS Book - " + today); out.setAuthor("Muriale's Italian Kitchen");
+  // Binder page numbers go in a strip of their own at the foot of the page.
+  const footer = (pg, n, band) => { const t = `Binder page ${n} of ${total}`, size = 7.5;
+    pg.drawText(t, {x: (pg.getWidth() - F.r.widthOfTextAtSize(t, size)) / 2, y: Math.max(2, band / 2 - 2.5), size, font: F.r, color: GREY}); };
+  const numberGenerated = pg => { if (opt.numbers && !opt.indexOnly) footer(pg, out.getPageCount(), 30); };
+  const warn = pg => { if (!complete) { pg.drawRectangle({x: 36, y: H - 30, width: W - 72, height: 20, color: RED});
+    centre(pg, `INCOMPLETE - ${problems.length} SDS sheet${problems.length === 1 ? " is" : "s are"} missing from this book`, F.b, 11, H - 24, rgb(1, 1, 1)); } };
+
+  if (opt.cover && !opt.indexOnly) {
     const pg = out.addPage([W, H]);
     pg.drawRectangle({x: 30, y: 30, width: W - 60, height: H - 60, borderColor: GOLD, borderWidth: 2.5});
     pg.drawRectangle({x: 38, y: 38, width: W - 76, height: H - 76, borderColor: GOLD, borderWidth: 0.8});
     const lw = 400, lh = lw * logo.height / logo.width;
     pg.drawImage(logo, {x: (W - lw) / 2, y: 470, width: lw, height: lh});
-    pg.drawRectangle({x: 38, y: 358, width: W - 76, height: 70, color: WINE});
-    centre(pg, "SAFETY DATA SHEETS", F.t, 38, 380, rgb(1, 1, 1));
+    bar(pg, 38, 358, W - 76, 70);
+    centre(pg, "SAFETY DATA SHEETS", F.t, 38, 380, ink);
     centre(pg, "Printed: " + today, F.b, 15, 318);
-    centre(pg, items.length + " product" + (items.length === 1 ? "" : "s") + " in this book", F.r, 12, 296, GREY);
+    centre(pg, good.length + " product" + (good.length === 1 ? "" : "s") + " in this book", F.r, 12, 296, GREY);
     centre(pg, "Emergency: 911     Poison Control: 1-800-222-1222", F.b, 14, 96, WINE);
+    if (!complete) { pg.drawRectangle({x: 38, y: 200, width: W - 76, height: 56, color: RED});
+      centre(pg, "INCOMPLETE BOOK", F.b, 22, 232, rgb(1, 1, 1)); centre(pg, `${problems.length} SDS sheet${problems.length === 1 ? " is" : "s are"} missing. See the index.`, F.b, 12, 210, rgb(1, 1, 1)); }
   }
 
   if (opt.index) {
-    const cols = [["#", 24], ["Product Name", 170], ["Manufacturer", 104], ["Category", 88], ["Storage Location", 90], ["SDS Date", 64]];
-    const X = 36, RH = 18;
+    const paged = true; // the index always says which page each SDS starts on
+    const fixed = [["Manufacturer", 96], ["Category", 84], ["Storage Location", 84], ["SDS Date", 54]];
+    const cols = [["Product Name", 168], ...fixed, ["Page", 54]];
+    const X = 36, RH = IDX.row;
     let pg, y, n = 0;
     const head = first => {
-      pg = out.addPage([W, H]);
+      pg = out.addPage([W, H]); warn(pg); numberGenerated(pg);
       if (first) {
         const lw = 128, lh = lw * logo.height / logo.width;
         pg.drawImage(logo, {x: X, y: H - 40 - lh, width: lw, height: lh});
         pg.drawText("Muriale's SDS Book Index", {x: 184, y: H - 74, size: 22, font: F.t, color: INK});
+        pg.drawText("Page numbers count every page of the book, starting at 1.", {x: 184, y: H - 92, size: 8, font: F.r, color: GREY});
         for (const [i, t] of ["Safety Data Sheets Index", "Printed: " + today].entries())
           pg.drawText(t, {x: W - X - F.r.widthOfTextAtSize(t, 9), y: H - 56 - i * 12, size: 9, font: F.r, color: INK});
-        y = H - 122;
-      } else y = H - 50;
-      pg.drawRectangle({x: X, y: y - 5, width: W - 2 * X, height: RH, color: WINE});
+        y = IDX.firstTop;
+      } else y = IDX.nextTop;
+      bar(pg, X, y - 5, W - 2 * X, RH);
       let x = X;
-      for (const [label, w] of cols) { pg.drawText(label, {x: x + 4, y, size: 9, font: F.b, color: rgb(1, 1, 1)}); x += w; }
+      for (const [label, w] of cols) { pg.drawText(label, {x: x + 4, y, size: 9, font: F.b, color: ink}); x += w; }
       y -= RH;
     };
     head(true);
     for (const p of items) {
-      if (y < 50) head(false);
+      if (y < IDX.bottom) head(false);
       n++;
-      if (n % 2 === 0) pg.drawRectangle({x: X, y: y - 5, width: W - 2 * X, height: RH, color: rgb(0.95, 0.94, 0.91)});
+      const gone = !starts[p.id];
+      if (n % 2 === 0 && !opt.eco) pg.drawRectangle({x: X, y: y - 5, width: W - 2 * X, height: RH, color: rgb(0.95, 0.94, 0.91)});
       pg.drawLine({start: {x: X, y: y - 5}, end: {x: W - X, y: y - 5}, thickness: 0.4, color: rgb(0.7, 0.7, 0.7)});
+      const cells = [p.name, p.manufacturer, p.category, p.location, sdsDate(p)];
+      if (paged) cells.push(gone ? "MISSING" : String(starts[p.id])); else cells.unshift(String(n));
       let x = X;
-      for (const [i, v] of [String(n), p.name, p.manufacturer, p.category, p.location, fmtDate(sdsDate(p))].entries()) {
-        pg.drawText(fit(v, F.r, 9, cols[i][1] - 7), {x: x + 4, y, size: 9, font: F.r, color: INK}); x += cols[i][1];
+      for (const [i, v] of cells.entries()) {
+        const lastCol = paged && i === cells.length - 1;
+        pg.drawText(fit(v, lastCol ? F.b : F.r, lastCol && gone ? 7 : 9, cols[i][1] - 7), {x: x + 4, y, size: lastCol && gone ? 7 : 9, font: lastCol ? F.b : F.r, color: gone ? RED : INK}); x += cols[i][1];
       }
       y -= RH;
     }
   }
 
   if (!opt.indexOnly) {
-    let last = null, done = 0;
-    for (const p of items) {
-      progress(`Adding sheet ${++done} of ${items.length}...`);
-      if (opt.dividers && p.category !== last) {
-        last = p.category;
-        const pg = out.addPage([W, H]), inSect = items.filter(q => q.category === last);
-        pg.drawRectangle({x: 0, y: 500, width: W, height: 84, color: WINE});
-        const title = fit(last || state.lib.catchAll, F.t, 38, W - 80);
-        centre(pg, title, F.t, 38, 530, rgb(1, 1, 1));
-        centre(pg, inSect.length + " product" + (inSect.length === 1 ? "" : "s"), F.b, 13, 468, GREY);
-        inSect.slice(0, 24).forEach((q, i) => centre(pg, fit(q.name, F.r, 12, W - 120), F.r, 12, 438 - i * 17));
+    let done = 0;
+    for (const x of good) {
+      progress(`Adding sheet ${++done} of ${good.length}...`);
+      if (dividerBefore.has(x.p.id)) {
+        const pg = out.addPage([W, H]), count = good.filter(q => q.p.category === x.p.category).length;
+        numberGenerated(pg);
+        bar(pg, 0, 500, W, 84);
+        centre(pg, fit(x.p.category || state.lib.catchAll, F.t, 38, W - 80), F.t, 38, 530, ink);
+        centre(pg, count + " product" + (count === 1 ? "" : "s"), F.b, 13, 468, GREY);
+        centre(pg, clean(CAT_HELP[x.p.category] || ""), F.r, 11, 446, GREY);
       }
-      try {
-        const r = await fetch("/pdf/" + p.id); if (!r.ok) throw new Error("missing");
-        const src = await PDFDocument.load(await r.arrayBuffer(), {ignoreEncryption: true});
-        (await out.copyPages(src, src.getPageIndices())).forEach(x => out.addPage(x));
-      } catch (e) { failed.push(p.name); }
+      const idxs = x.doc.getPageIndices();
+      if (!opt.numbers) { (await out.copyPages(x.doc, idxs)).forEach(c => out.addPage(c)); continue; }
+      // Upright pages are shrunk about 3% into the upper part of a page of the same size, so the
+      // number can never cover anything printed on the manufacturer's page. Pages that are
+      // rotated keep their own geometry and get a small number in the corner instead.
+      const upright = idxs.filter(i => rotOf(x.doc.getPage(i)) === 0), turned = idxs.filter(i => !upright.includes(i));
+      const boxes = upright.map(i => { const b = x.doc.getPage(i).getCropBox(); return {left: b.x, bottom: b.y, right: b.x + b.width, top: b.y + b.height}; });
+      const emb = upright.length ? await out.embedPages(upright.map(i => x.doc.getPage(i)), boxes) : [];
+      const copies = turned.length ? await out.copyPages(x.doc, turned) : [];
+      for (const i of idxs) {
+        const u = upright.indexOf(i);
+        if (u < 0) { const pg = out.addPage(copies[turned.indexOf(i)]); try { stampFooter(pg, `Binder page ${out.getPageCount()} of ${total}`, F.r); } catch (e) {} continue; }
+        const b = boxes[u], w = b.right - b.left, h = b.top - b.bottom, band = Math.min(BAND, h * 0.08), s = (h - band) / h;
+        const np = out.addPage([w, h]);
+        np.drawPage(emb[u], {x: (w - w * s) / 2, y: band, width: w * s, height: h * s});
+        footer(np, out.getPageCount(), band);
+      }
     }
+    if (out.getPageCount() !== total) throw new Error("The book did not come out at the expected length. Nothing was printed; please try again.");
   }
-
-  if (opt.numbers) {
-    const pages = out.getPages();
-    pages.forEach((pg, i) => {
-      if (i === 0 && opt.cover) return;
-      try { const t = `Page ${i + 1} of ${pages.length}`, box = pg.getCropBox();
-        pg.drawText(t, {x: box.x + box.width - F.r.widthOfTextAtSize(t, 8) - 24, y: box.y + 12, size: 8, font: F.r, color: GREY}); } catch (e) {}
-    });
-  }
-  return {bytes: await out.save(), pages: out.getPageCount(), failed};
+  return {bytes: await out.save(), pages: out.getPageCount(), bookPages: total, problems, complete, starts, included: good.length};
 }
 
-let pv = {url: null, name: ""};
+let pv = {url: null, name: "", blob: false};
+function showPreview(url, blob, name, title, note) {
+  if (pv.url && pv.blob) URL.revokeObjectURL(pv.url);
+  pv = {url, name, blob};
+  $("#pvTitle").textContent = title; $("#pvNote").textContent = note;
+  $("#pvFrame").src = url; $("#preview").className = "show";
+}
+let pendingBook = null;
+function openBook(book) {
+  const o = printOpt, idxOnly = o.scope === "index";
+  const url = URL.createObjectURL(new Blob([book.bytes], {type: "application/pdf"}));
+  const stamp = new Date().toISOString().slice(0, 10), pages = `${book.pages} page${book.pages === 1 ? "" : "s"}, confirmed`;
+  if (idxOnly) return showPreview(url, true, `Muriales SDS Index ${stamp}.pdf`, `SDS Index — ${pages}`, "Check the pages, then click Print.");
+  showPreview(url, true, `${book.complete ? "" : "INCOMPLETE "}Muriales SDS Book ${stamp}.pdf`,
+    book.complete ? `SDS Book — ${pages}` : `INCOMPLETE SDS BOOK — ${book.problems.length} sheet${book.problems.length === 1 ? "" : "s"} left out — ${pages}`,
+    book.complete ? "After the pages are in the binder, click “Binder Is Up to Date” on the Library screen." : "This is not a complete binder. Do not record the binder as up to date from this printout.");
+}
 async function runPrint() {
-  const o = printOpt, items = printItems(), single = !!o.only, idxOnly = o.scope === "index" && !single;
+  const o = printOpt, items = printItems(), idxOnly = o.scope === "index";
   const busy = $("#busy"); const say = t => { if (busy) busy.textContent = t; };
   say("Preparing the pages...");
-  const book = await buildBook({items, cover: !single && !idxOnly && o.cover, index: idxOnly || (!single && o.index), dividers: !single && !idxOnly && o.dividers, numbers: !single && !idxOnly && o.numbers, indexOnly: idxOnly}, say);
+  const book = await buildBook({items, cover: o.cover, index: idxOnly || o.index, dividers: o.dividers, numbers: o.numbers, eco: o.eco, indexOnly: idxOnly}, say);
+  api("/api/binder/generated", {method: "POST", body: JSON.stringify({scope: o.scope, pages: book.pages, complete: book.complete, missing: book.problems.map(x => x.name), ids: items.map(p => p.id)})})
+    .then(reload).then(() => { if (state.view === "library") render(); }).catch(() => {});
+  if (book.complete) { closeModal(); return openBook(book); }
+  // A sheet could not be included. Stop and say so; nothing reaches the printer unless the manager chooses to go on.
+  pendingBook = book;
+  showModal(`<h2>${icon("warn")}This ${idxOnly ? "Index" : "Book"} Is Incomplete</h2><div class="body">
+    <p style="margin-top:0"><b>${book.problems.length} of ${items.length} SDS sheets could not be included.</b> A binder printed now would be missing ${book.problems.length === 1 ? "it" : "them"}.</p>
+    <div class="box" style="max-height:210px;overflow:auto">${book.problems.map(x => `<p style="margin:4px 0"><b>${esc(x.name)}:</b> ${esc(x.why)}.</p>`).join("")}</div>
+    <p>Fix ${book.problems.length === 1 ? "this sheet" : "these sheets"} in Settings (Diagnostics to check files, Clean Up to replace), then print again. If you go on, every copy is stamped INCOMPLETE.</p></div>
+    <div class="foot"><button class="btn green big" data-act="fix-sheets">Fix the Sheets</button><button class="btn big" data-act="open-incomplete">Preview Incomplete Copy</button><button class="btn big" data-act="close">Cancel</button></div>`);
+}
+// "2-4, 7" -> [1,2,3,6] (zero-based), or null if it is not a valid list for a PDF of n pages.
+function parsePages(text, n) {
+  const out = [];
+  for (const part of text.split(",").map(s => s.trim()).filter(Boolean)) {
+    const m = /^(\d+)(?:\s*-\s*(\d+))?$/.exec(part); if (!m) return null;
+    const a = +m[1], b = m[2] ? +m[2] : a; if (a < 1 || b < a || b > n) return null;
+    for (let i = a; i <= b; i++) out.push(i - 1);
+  }
+  return out.length ? out : null;
+}
+async function printOne() {
+  const p = byId(state.id), all = $('input[name="pp"]:checked').value === "all", stamp = new Date().toISOString().slice(0, 10);
+  if (all) { closeModal(); return showPreview(`/pdf/${p.id}?v=${encodeURIComponent(p.pdfUpdatedAt || "")}`, false, `${p.name} SDS.pdf`, `${p.name} — complete SDS`, "This is the manufacturer's sheet exactly as supplied."); }
+  const x = await loadSheet(p); if (!x.doc) throw new Error(`Pages cannot be picked from this sheet because ${x.why}.`);
+  const want = parsePages($("#pprange").value, x.n);
+  if (!want) throw new Error(`Enter pages between 1 and ${x.n}, for example 2-4 or 1, 3.`);
+  const out = await PDFDocument.create(); (await out.copyPages(x.doc, want)).forEach(c => out.addPage(c));
   closeModal();
-  if (pv.url) URL.revokeObjectURL(pv.url);
-  pv.url = URL.createObjectURL(new Blob([book.bytes], {type: "application/pdf"}));
-  pv.name = (single ? items[0].name + " SDS" : idxOnly ? "Muriales SDS Index" : "Muriales SDS Book") + " " + new Date().toISOString().slice(0, 10) + ".pdf";
-  $("#pvTitle").textContent = (single ? items[0].name : idxOnly ? "SDS Index" : "SDS Book") + " — " + book.pages + " page" + (book.pages === 1 ? "" : "s");
-  $("#pvNote").textContent = "Check the pages, then click Print.";
-  $("#pvFrame").src = pv.url;
-  $("#preview").className = "show";
-  if (book.failed.length) toast("These sheets could not be added and must be printed separately: " + book.failed.join(", "), true);
+  showPreview(URL.createObjectURL(new Blob([await out.save()], {type: "application/pdf"})), true, `${p.name} SDS pages ${$("#pprange")?.value || ""} ${stamp}.pdf`.replace(/\s+/g, " "),
+    `${p.name} — ${want.length} of ${x.n} pages`, "A reference copy of selected pages. The official binder uses the complete sheet.");
 }
 
 /* ---------- form helpers ---------- */
 async function takeFile(file) {
   const f = state.form;
-  if (!file) return;
+  if (!file || !f || (f.id && !f.replaceMode)) return;
   if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") return toast("That file is not a PDF.", true);
   f.file = file; f.pages = 0; f.fileNote = "";
   try { f.pages = (await PDFDocument.load(await file.arrayBuffer(), {ignoreEncryption: true})).getPageCount(); f.fileNote = f.pages + " page" + (f.pages === 1 ? "" : "s"); }
   catch (e) { f.fileNote = "Page count could not be read"; }
-  if (!f.name.trim()) f.name = file.name.replace(/\.pdf$/i, "").replace(/[_-]+/g, " ").replace(/\s*\b(sds|msds)\b\s*/ig, " ").trim();
+  if (!f.id && !f.name.trim()) f.name = file.name.replace(/\.pdf$/i, "").replace(/[_-]+/g, " ").replace(/\s*\b(sds|msds)\b\s*/ig, " ").trim();
   render();
 }
 async function saveForm() {
   const f = state.form;
   if (!f.name.trim()) return toast("Enter the product name.", true);
-  if (!f.id && !f.file) return toast("Choose the SDS PDF for this product.", true);
-  const {file, fileNote, id, ...meta} = f;
+  if ((!f.id || f.replaceMode) && !f.file) return toast(f.replaceMode ? "Choose the new PDF first." : "Choose the SDS PDF for this product.", true);
+  if (f.verify && !f.verifiedBy.trim()) return toast("Enter who checked the summary.", true);
+  if (f.verify) remembered("by", f.verifiedBy.trim());
+  const {file, fileNote, id, replaceMode, ...meta} = f;
   const fd = new FormData(); fd.append("meta", JSON.stringify(meta)); if (file) fd.append("pdf", file);
   const p = await api(id ? "/api/products/" + id : "/api/products", {method: "POST", body: fd});
-  await reload(); state.form = null; state.view = "detail"; state.id = p.id; render();
-  toast(id ? "Changes saved." : "SDS added to the library.");
+  await reload(); state.form = null; state.view = "detail"; state.id = p.id; render(); backfillPages();
+  toast(replaceMode ? "PDF replaced. The old one is in the removed folder." : id ? "Changes saved." : "SDS added to the library.");
 }
 const saveCats = (categories, renames = {}) => api("/api/categories", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({categories, renames})}).then(reload).then(render);
 
 /* ---------- events ---------- */
 const ACT = {
-  nav(el) { const v = el.dataset.v; if (v === "print") return state.lib.products.length ? printDialog("all") : toast("Add a product first."); if (v === "add") state.form = blankForm(); state.view = v; state.focusQ = false; render(); if (v === "library") return reload().then(render); },
+  nav(el) { const v = el.dataset.v; if (v === "print") return state.lib.products.length ? printDialog("all") : toast("Add a product first."); if (v === "add") state.form = blankForm(); state.view = v; if (v === "settings") loadTab(); state.focusQ = false; render(); if (v === "library") return reload().then(render); },
   open(el, e) { if (e.target.closest("input")) return; state.view = "detail"; state.id = el.dataset.id; render(); },
   toggle(el) { state.sel.has(el.dataset.id) ? state.sel.delete(el.dataset.id) : state.sel.add(el.dataset.id); render(); },
   selall() { visible().forEach(p => state.sel.add(p.id)); render(); },
@@ -599,10 +1010,79 @@ const ACT = {
   sort(el) { const k = el.dataset.k; state.sort = {key: k, dir: state.sort.key === k ? -state.sort.dir : 1}; render(); },
   print(el) { printDialog(el.dataset.scope); },
   "print-go"(el) { el.disabled = true; return runPrint(); },
-  "print-one"() { printOpt = {...printOpt, only: state.id}; showModal(`<h2>${icon("print")}Print This Sheet</h2><div class="body"><p id="busy" style="font-weight:600">Preparing the pages...</p></div>`); return runPrint().catch(e => { closeModal(); throw e; }); },
-  edit(el) { const p = byId(state.id); state.form = {...blankForm(), ...p}; state.view = "add"; render(); if (el.dataset.pick) $("#file").click(); },
-  remove() { removeDialog(byId(state.id)); },
-  async "remove-yes"() { const p = byId(state.id); await api("/api/products/" + state.id, {method: "DELETE"}); closeModal(); await reload(); state.view = "library"; render(); toast(`“${p.name}” was removed.`); },
+  "print-one"() { const p = byId(state.id);
+    showModal(`<h2>${icon("print")}Print This Sheet</h2><div class="body"><p style="margin-top:0"><b>${esc(p.name)}</b>${p.pages ? ` — ${p.pages} pages` : ""}</p>
+      <label><input type="radio" name="pp" value="all" checked>The complete SDS (use this for the binder)</label>
+      <label><input type="radio" name="pp" value="some">Only these pages: <input id="pprange" class="field" style="width:150px" placeholder="e.g. 2-4, 7"></label>
+      <p class="hint" style="color:#444">Picking pages makes a separate reference copy. The stored SDS is not changed.</p></div>
+      <div class="foot"><button class="btn green big" data-act="print-one-go">${icon("print")}Preview &amp; Print</button><button class="btn big" data-act="close">Cancel</button></div>`); },
+  "print-one-go": printOne,
+  "fix-sheets"() { closeModal(); pendingBook = null; state.view = "settings"; state.tab = "diagnostics"; render(); loadTab(); },
+  "open-incomplete"() { const b = pendingBook; pendingBook = null; closeModal(); if (b) openBook(b); },
+  edit() { const p = byId(state.id); state.form = {...blankForm(), ...p, pictograms: p.pictograms || []}; state.view = "add"; render(); },
+  replace(el) { const p = byId(el.dataset.id); state.form = {...blankForm(), ...p, pictograms: p.pictograms || [], replaceMode: true}; state.view = "add"; render(); },
+  remove(el) { state.id = el.dataset.id; removeDialog(byId(state.id)); },
+  async "remove-yes"() { const p = byId(state.id); await api("/api/products/" + state.id, {method: "DELETE"}); closeModal(); await reload(); render(); toast(`“${p.name}” was removed. It can be restored from Settings, Clean Up.`); },
+  async "restore-product"(el) { const p = await api("/api/removed/" + el.dataset.id + "/restore", {method: "POST"}); await reload(); render(); toast(`“${p.name}” is back in the library.`); },
+  "view-removed"(el) { window.open("/pdf-removed/" + el.dataset.id, "_blank"); },
+  tab(el) { state.tab = el.dataset.t; render(); loadTab(); },
+  "binder-mark"() { const lb = state.lib.lastBuild;
+    if (!lb || !lb.complete || lb.confirmed) return toast("Print a complete book first. Only a complete book can be confirmed.", true);
+    const n = Object.keys(lb.items || {}).length, what = lb.scope === "all" ? "entire book" : lb.scope === "index" ? "index" : "selected sheets";
+    showModal(`<h2>${icon("list")}Confirm the Paper Binder</h2><div class="body">
+      <p style="margin-top:0">Record that the printed ${what} is now in the paper binder?</p>
+      <div class="box">Assembled ${fmtDate(lb.at)} at ${esc(lb.at.slice(11, 16))}: ${n} product${n === 1 ? "" : "s"}, ${lb.pages} pages, complete.
+        ${lb.scope === "selected" ? "<br>Only these sheets are recorded as updated." : lb.scope === "index" ? "<br>Only the index is recorded as reprinted." : ""}</div>
+      <p>Only confirm once the printed pages are actually in the binder. Assembling or previewing a book does not count.</p></div>
+      <div class="foot"><button class="btn green big" data-act="binder-mark-go">Yes, It Is in the Binder</button><button class="btn big" data-act="close">Not Yet</button></div>`); },
+  async "binder-mark-go"() { await api("/api/binder/confirm", {method: "POST"}); closeModal(); await reload(); render(); toast("Recorded: the paper binder was updated."); },
+  async "binder-pulled"() { await api("/api/binder/pulled", {method: "POST"}); await reload(); render(); toast("Recorded: those sheets were taken out of the binder."); },
+  "binder-select"() { const d = binderDiff(); state.sel = new Set([...d.add, ...d.replace].map(p => p.id)); state.q = ""; state.cat = ""; render(); toast("Changed sheets selected. Click Print Selected."); },
+  async "restore-ask"(el) { const file = el.dataset.file, i = await api("/api/backups/inspect", {method: "POST", body: JSON.stringify({file})});
+    showModal(`<h2>${icon("swap")}Restore From Backup</h2><div class="body">
+      <p style="margin-top:0">Replace the current library with this backup?</p>
+      <div class="box"><dl><dt>Backup:</dt><dd>${esc(file)}</dd><dt>Contains:</dt><dd>${i.products} product${i.products === 1 ? "" : "s"}, ${i.sheets} PDF${i.sheets === 1 ? "" : "s"}${i.removed ? `, ${i.removed} removed` : ""}</dd><dt>Library now:</dt><dd>${state.lib.products.length} product${state.lib.products.length === 1 ? "" : "s"}</dd></dl></div>
+      ${i.missingPdfs.length ? `<p><b>Note:</b> the backup has no PDF for: ${esc(i.missingPdfs.join(", "))}.</p>` : ""}
+      <p>The current library is not deleted. It is moved into a “Before restore” folder inside SDS Backups. If the backup does not open correctly, the current library is put back.</p></div>
+      <div class="foot"><button class="btn wine big" data-act="restore-go" data-file="${esc(file)}">Restore This Backup</button><button class="btn big" data-act="close">Cancel</button></div>`); },
+  async "restore-go"(el) { el.disabled = true; const r = await api("/api/restore", {method: "POST", body: JSON.stringify({file: el.dataset.file})}); closeModal(); state.sel.clear(); await reload(); await loadBackups(); toast(`Backup restored: ${r.products} products. The previous library is in ${r.previousKeptIn}`); },
+  "open-backups"() { return api("/api/open-folder?which=backups", {method: "POST"}); },
+  "folder-ask"() { showModal(`<h2>${icon("folder")}Change Library Location</h2><div class="body">
+      <p style="margin-top:0">Paste the full path of the folder to keep the library in. For Microsoft 365, use the OneDrive or SharePoint folder that is synced to this computer, or a mapped network drive.</p>
+      <input id="newfolder" class="field" placeholder="e.g. C:\\Users\\Office\\OneDrive - Muriale's\\SDS Data">
+      <p class="hint" style="color:#444">Tip: open the folder in File Explorer, click the address bar, copy, and paste it here.</p>
+      <p>If the folder is empty, the current library is copied into it. If it already holds an SDS library, that library is opened instead. The current folder is left where it is.</p></div>
+      <div class="foot"><button class="btn green big" data-act="folder-go">Use This Folder</button><button class="btn big" data-act="close">Cancel</button></div>`); $("#newfolder").focus(); },
+  async "folder-go"(el) { const path = $("#newfolder").value; if (!path.trim()) return toast("Paste the folder path first.", true); el.disabled = true;
+    try { const r = await api("/api/data-folder", {method: "POST", body: JSON.stringify({path})}); closeModal(); state.sel.clear(); await reload(); await loadBackups(); toast(r.copied ? `Library copied to ${r.folder}. The old copy is still in ${r.previous}` : `Now using the library already in ${r.folder} (${r.products} products).`); }
+    finally { el.disabled = false; } },
+  async emerg() { const p = byId(state.id), bytes = await emergencySheet(p), stamp = new Date().toISOString().slice(0, 10);
+    showPreview(URL.createObjectURL(new Blob([bytes], {type: "application/pdf"})), true, `${p.name} Emergency Sheet ${stamp}.pdf`, `Emergency Sheet — ${p.name}`, "One page. Check it, then click Print."); },
+  "open-product"(el) { state.view = "detail"; state.id = el.dataset.id; render(); },
+  async "note-add"() { const text = $("#notetext").value.trim(), by = $("#noteby").value.trim(); if (!text) return toast("Write the note first.", true);
+    if (by) remembered("by", by); await api("/api/notes", {method: "POST", body: JSON.stringify({by, text})}); await reload(); render(); toast("Note added."); },
+  async "note-done"(el) { await api(`/api/notes/${el.dataset.id}/done`, {method: "POST", body: JSON.stringify({by: remembered("by")})}); await reload(); render(); },
+  async "note-reopen"(el) { await api(`/api/notes/${el.dataset.id}/reopen`, {method: "POST", body: "{}"}); await reload(); render(); },
+  async "lock-acquire"() { await api("/api/lock/acquire", {method: "POST"}); await reload(); await refreshLock(); render(); toast("You can now make changes."); },
+  "lock-takeover-ask"() { const h = state.lock && state.lock.holder;
+    showModal(`<h2>${icon("warn")}Take Over Editing</h2><div class="body"><p style="margin-top:0">${h ? esc(h.who) + " is" : "Someone else is"} editing${h && h.live ? " right now" : ""}. If you take over, they can no longer make changes and anything they have not saved is lost.</p>
+      <p>Only do this if you are sure they have finished, for example if that computer was turned off or crashed.</p></div>
+      <div class="foot"><button class="btn wine big" data-act="lock-takeover">Take Over</button><button class="btn big" data-act="close">Cancel</button></div>`); },
+  async "lock-takeover"() { await api("/api/lock/takeover", {method: "POST"}); closeModal(); await reload(); await refreshLock(); render(); toast("You are now the editor."); },
+  async "integ-accept"(el) { await api(`/api/integrity/${el.dataset.id}/accept`, {method: "POST"}); await reload(); if (state.integ) state.integ = (await api("/api/integrity?full=1")).rows; render(); toast("File accepted. The binder will show this sheet as needing a reprint."); },
+  async "integ-run"(el) { el.disabled = true; try { state.integ = (await api("/api/integrity?full=1")).rows; } finally { el.disabled = false; } render(); },
+  async "diag-run"() { state.diag = null; render(); await loadDiag(); },
+  "diag-save"() { const a = document.createElement("a"), b = new Blob([state.diag.report], {type: "text/plain"}); a.href = URL.createObjectURL(b); a.download = `SDS Manager diagnostics ${new Date().toISOString().slice(0, 10)}.txt`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); },
+  async "diag-copy"() { try { await navigator.clipboard.writeText(state.diag.report); toast("Report copied."); } catch (e) { toast("Could not copy. Use Save Report instead.", true); } },
+  "import-pdfs"() { $("#importpdfs").click(); },
+  "import-zip"() { $("#importzip").click(); },
+  "rec-prev"() { showModal(`<h2>${icon("warn")}Go Back One Save</h2><div class="body"><p style="margin-top:0">Replace the product list with the version from before the last save?</p><p>Changes made in the last save will be undone. The current list is kept as a copy beside it.</p></div>
+      <div class="foot"><button class="btn wine big" data-act="rec-prev-go">Go Back</button><button class="btn big" data-act="close">Cancel</button></div>`); },
+  async "rec-prev-go"(el) { el.disabled = true; const r = await api("/api/recovery/previous-save", {method: "POST"}); closeModal(); await reload(); await loadRecovery(); toast(`Went back one save: ${r.products} products. The list it replaced is kept as ${r.keptAs}.`); },
+  "rec-rebuild"() { showModal(`<h2>${icon("warn")}Rebuild Library</h2><div class="body"><p style="margin-top:0">Set the current product list aside and build a new one from the PDFs in the “sheets” folder?</p><p>Details such as manufacturer, category and emergency summaries are not in the PDFs, so each product comes back as “needs review”. Only use this if the list is lost or damaged.</p></div>
+      <div class="foot"><button class="btn wine big" data-act="rec-rebuild-go">Rebuild</button><button class="btn big" data-act="close">Cancel</button></div>`); },
+  async "rec-rebuild-go"(el) { el.disabled = true; const r = await api("/api/recovery/rebuild", {method: "POST"}); closeModal(); await reload(); await loadRecovery(); toast(`Library rebuilt: ${r.products} products need review. The old list is kept as ${r.keptAs}.`); },
+  async "rec-unlinked"(el) { const p = await api("/api/recovery/unlinked", {method: "POST", body: JSON.stringify({file: el.dataset.file})}); await reload(); await loadRecovery(); toast(`“${p.name}” was added back. Check its details.`); },
   close: closeModal,
   browse(el, e) { if (e.target.id !== "file") $("#file").click(); },
   save: saveForm,
@@ -614,10 +1094,10 @@ const ACT = {
     showModal(`<h2>${icon("edit")}Rename Category</h2><div class="body"><input id="rename" class="field" value="${esc(old)}" maxlength="40" data-old="${esc(old)}"></div><div class="foot"><button class="btn green big" data-act="cat-rename-go">Save</button><button class="btn big" data-act="close">Cancel</button></div>`); $("#rename").select(); },
   "cat-rename-go"() { const el = $("#rename"), old = el.dataset.old, v = el.value.trim(); if (!v || v === old) return closeModal(); const c = state.lib.categories; if (c.some(x => x !== old && x.toLowerCase() === v.toLowerCase())) return toast("That category already exists.", true); closeModal(); if (state.cat === old) state.cat = v; return saveCats(c.map(x => x === old ? v : x), {[old]: v}); },
   "open-folder"() { return api("/api/open-folder", {method: "POST"}); },
-  async backup() { const r = await api("/api/backup", {method: "POST"}); toast("Backup created: " + r.file); },
+  async backup() { const r = await api("/api/backup", {method: "POST"}); await loadBackups(); toast("Backup created: " + r.file); },
   "pv-print"() { try { $("#pvFrame").contentWindow.focus(); $("#pvFrame").contentWindow.print(); } catch (e) { toast("Use the printer button in the top right corner of the preview.", true); } },
   "pv-save"() { const a = document.createElement("a"); a.href = pv.url; a.download = pv.name; a.click(); },
-  "pv-close"() { $("#preview").className = ""; $("#pvFrame").src = "about:blank"; },
+  "pv-close"() { $("#preview").className = ""; $("#pvFrame").src = "about:blank"; render(); },
 };
 $('[data-act="pv-print"]').innerHTML = icon("print") + "Print";
 $('[data-act="pv-save"]').innerHTML = icon("down") + "Save as PDF";
@@ -627,7 +1107,7 @@ document.addEventListener("click", e => {
   const el = e.target.closest("[data-act]"); if (!el || el.disabled) return;
   const act = e.target.closest("input[data-act]") ? e.target.dataset.act : el.dataset.act;
   const target = e.target.closest("input[data-act]") || el;
-  Promise.resolve().then(() => ACT[act](target, e)).catch(err => { toast(err.message || String(err), true); if (act === "print-go") drawPrintDialog(); });
+  Promise.resolve().then(() => ACT[act](target, e)).catch(err => { toast(err.message || String(err), true); if (act === "print-go") drawPrintDialog(); if (act === "print-one-go") el.disabled = false; });
 });
 document.addEventListener("input", e => {
   const t = e.target;
@@ -638,7 +1118,19 @@ document.addEventListener("change", e => {
   const t = e.target;
   if (t.id === "cat") { state.cat = t.value; state.focusQ = false; render(); }
   else if (t.id === "file") takeFile(t.files[0]);
+  else if (t.id === "importpdfs" && t.files.length) { const files = [...t.files]; t.value = "";
+    upload("/api/import/pdfs", "pdf", files).then(async r => { await reload(); const sk = r.skipped || [];
+      backfillPages();
+      showModal(`<h2>${icon("up")}Import Finished</h2><div class="body"><p style="margin-top:0"><b>${r.added.length} PDF${r.added.length === 1 ? "" : "s"} added</b> and marked “needs review”. Open each one to fill in the manufacturer, category, storage location and SDS date.</p>
+        ${sk.length ? `<p><b>${sk.length} skipped:</b></p><div class="box" style="max-height:180px;overflow:auto">${sk.map(x => `<div>${esc(x.name)} ${esc(x.reason)}</div>`).join("")}</div>` : ""}</div>
+        <div class="foot"><button class="btn green big" data-act="close">OK</button></div>`); render(); }).catch(e => toast(e.message, true)); }
+  else if (t.id === "importzip" && t.files.length) { const f = t.files[0]; t.value = "";
+    upload("/api/import/backup", "zip", [f]).then(async () => { state.tab = "backup"; render(); await loadBackups(); toast("Library zip added to the backups list. Restore it below when you are ready."); }).catch(e => toast(e.message, true)); }
+  else if (t.dataset.fc && state.form) state.form[t.dataset.fc] = t.checked;
+  else if (t.dataset.pic && state.form) { const s = new Set(state.form.pictograms); t.checked ? s.add(t.dataset.pic) : s.delete(t.dataset.pic); state.form.pictograms = [...s]; }
+  else if (t.dataset.f === "revisionDate" && state.form) render();
   else if (t.name === "scope") { printOpt.scope = t.value; drawPrintDialog(); }
+  else if (t.id === "pprange") { const some = $('input[name="pp"][value="some"]'); if (some) some.checked = true; }
   else if (t.dataset.o) { printOpt[t.dataset.o] = t.checked; drawPrintDialog(); }
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#modal").className) closeModal(); if (e.key === "Enter" && e.target.id === "newcat") ACT["cat-add"](); if (e.key === "Enter" && e.target.id === "rename") ACT["cat-rename-go"](); });
@@ -649,9 +1141,10 @@ for (const ev of ["dragover", "dragleave", "drop"]) document.addEventListener(ev
 });
 
 let misses = 0;
+setInterval(() => refreshLock().catch(() => {}), 15000);
 setInterval(() => fetch("/api/ping").then(r => { if (!r.ok) throw 0; misses = 0; $("#lost").style.display = "none"; }).catch(() => { if (++misses >= 2) $("#lost").style.display = "block"; }), 15000);
 fetch("/api/ping");
-reload().then(render).catch(e => toast(e.message, true));
+reload().then(() => { render(); refreshLock().catch(() => {}); backfillPages(); }).catch(e => toast(e.message, true));
 </script>
 </body>
 </html>

@@ -54,3 +54,13 @@ The GitHub Actions build also embeds the program icon (`app.ico`) by running
 
 PDF assembly uses [pdf-lib](https://pdf-lib.js.org/) (MIT licence), bundled as
 `ui/pdf-lib.min.js`.
+
+## Version 1.4
+
+- **Shared library, one editor at a time.** The exe and the `SDS Data` folder can sit on a OneDrive, SharePoint or network folder and be used from several computers. The first copy opened can make changes. Others open view-only (search, view, print) and see who is editing. The lock (`edit.lock`) is refreshed every 20 seconds and released when the program closes; a lock nobody has refreshed for 3 minutes is treated as abandoned. "Take Over" is there for a crashed computer.
+- **Settings tabs:** Storage, Backup & Restore, Import & Export, Clean Up, Recovery, Diagnostics.
+- **Aliases** ("Also Known As") are searchable. **Handoff notes** for the next manager. **Emergency Sheet**: a one-page printout of a product's summary.
+- **Document integrity:** each PDF is fingerprinted when added; a changed file is flagged and keeps a book from being called complete until a manager accepts or replaces it.
+- **Originals stay unchanged.** Previews show the stored PDF as is. Printed books copy the manufacturer's pages as they are; binder page numbers are optional and off by default. The index always lists the page each SDS starts on. "Printer-friendly" outlines the bars instead of filling them.
+- **Import/Export:** product list as CSV, whole library as a zip, bulk PDF import, library-zip import.
+- **Diagnostics and Recovery:** health checks with a saveable report; go back one save, rebuild from the PDFs in the folder, add back old PDFs.

@@ -20,3 +20,5 @@ func fatal(msg string) {
 	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(1)
 }
+
+func freeSpace(string) int64 { return -1 }
