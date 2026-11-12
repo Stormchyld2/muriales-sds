@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const appVersion = "1.5"
+const appVersion = "1.5.1"
 
 // ---------------------------------------------------------------- notes
 

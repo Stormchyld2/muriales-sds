@@ -27,7 +27,7 @@ func openWindow(url string) (*exec.Cmd, error) {
 		}
 		candidates = append(candidates, filepath.Join(root, "Google", "Chrome", "Application", "chrome.exe"))
 	}
-	profile := filepath.Join(os.Getenv("LOCALAPPDATA"), "MurialesSDSBook", "window")
+	profile := filepath.Join(os.Getenv("LOCALAPPDATA"), "MurialesSDSBook", "window-2") // new folder so a cached old icon is not reused
 	_ = os.MkdirAll(profile, 0o755)
 	for _, exe := range candidates {
 		if _, err := os.Stat(exe); err != nil {

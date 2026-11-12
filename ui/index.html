@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Muriale's SDS Manager</title>
-<link rel="icon" href="favicon.png">
+<link rel="icon" type="image/png" sizes="256x256" href="app-icon.png?v=2">
 <style>
 :root{--bg:#2c2e33;--panel:#35383e;--panel2:#3d4047;--line:#565a62;--text:#f1f1f1;--mute:#b9bcc2;
   --wine:#8a1626;--wine2:#5b0c17;--gold:#e0bc6e;--green:#1e7d30;--green2:#145a22;--cream:#f6f1e6}
@@ -375,7 +375,7 @@ function vDetail() {
         <div class="poison"><span>Poison Control</span><strong>1-800-222-1222</strong><span>Emergency: 911</span></div>
       </div>
       ${p.needsReview ? `<div class="note warn"><span class="grow"><b>Needs review.</b> This PDF was added without a manager's check. Any details shown were drafted from the sheet. Click Edit, check them against the PDF, and add the category and storage location.</span></div>` : ""}
-      ${p.missing ? `<div class="note bad"><span class="grow"><b>The PDF for this product is missing from the sheets folder.</b> Use Settings, Clean Up, Replace to add it again.</span></div>` : ""}
+      ${p.missing ? `<div class="note bad"><span class="grow"><b>The PDF for this product is missing from the sheets folder.</b> Use Replace to add it again, or Remove if the product is no longer used.</span><button class="btn small" data-act="replace" data-id="${p.id}">Replace PDF</button><button class="btn small wine" data-act="remove" data-id="${p.id}">Remove</button></div>` : ""}
       ${(state.lib.integrity || {})[p.id] === "changed" ? `<div class="note bad"><span class="grow"><b>This PDF is not the file that was added.</b> It was changed outside the program. Open it and check it. If it is the right sheet, accept it; the binder will then show this sheet as needing a reprint.</span><button class="btn small" data-act="integ-accept" data-id="${p.id}">Accept This File</button></div>` : ""}
       ${verify}
       <div class="panel sum">
@@ -390,6 +390,8 @@ function vDetail() {
     <button class="btn" data-act="print-one">${icon("print")}Print This Sheet</button>
     <button class="btn" data-act="emerg">${icon("warn")}Emergency Sheet</button>
     <button class="btn" data-act="edit">${icon("edit")}Edit</button>
+    <button class="btn" data-act="replace" data-id="${p.id}">${icon("swap")}Replace PDF</button>
+    <button class="btn wine" data-act="remove" data-id="${p.id}">${icon("trash")}Remove</button>
     <span class="grow"></span>
     <button class="btn" data-act="nav" data-v="library">${icon("back")}Back to Library</button>
   </div>`;
