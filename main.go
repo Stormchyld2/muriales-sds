@@ -509,6 +509,7 @@ func (s *store) save() error {
 	if err != nil {
 		return err
 	}
+	s.safetyCopy(b)
 	tmp := s.file() + ".tmp"
 	if err := os.WriteFile(tmp, b, 0o644); err != nil {
 		return err
@@ -1483,6 +1484,9 @@ func main() {
 	s.mu.Lock()
 	s.purgeOld()
 	s.mu.Unlock()
+	if !s.isReadOnly() {
+		go s.weeklyZip()
+	}
 	go func() {
 		for range time.Tick(6 * time.Hour) {
 			s.mu.Lock()
