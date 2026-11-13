@@ -186,7 +186,7 @@ func (s *store) holderText() string {
 // readOnlyOK lists the changes that stay possible without the lock: none of them alter the library.
 var readOnlyOK = map[string]bool{
 	"/api/data-folder": true, "/api/backup": true, "/api/backups/inspect": true,
-	"/api/open-folder": true, "/api/import/backup": true,
+	"/api/open-folder": true, "/api/handoff/email": true, "/api/import/backup": true,
 }
 
 // gate refuses every change to the library while this copy is read-only.

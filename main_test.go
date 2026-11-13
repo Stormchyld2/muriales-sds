@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -709,5 +710,25 @@ func TestDeletePermanentlyNow(t *testing.T) {
 	}
 	if _, err := os.Stat(file); err == nil {
 		t.Error("archived PDF should be gone")
+	}
+}
+
+func TestHandoffReportEmail(t *testing.T) {
+	e := newEnv(t)
+	e.post("/api/notes", `{"by":"MM","text":"Walk-in compressor is loud"}`)
+	rec := httptest.NewRecorder()
+	e.h.ServeHTTP(rec, httptest.NewRequest("GET", "/api/handoff/report", nil))
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Walk-in compressor is loud") {
+		t.Fatalf("handoff report: %d", rec.Code)
+	}
+	if c, _ := e.post("/api/handoff/email", `{"to":"not an address"}`); c != 400 {
+		t.Error("bad address refused")
+	}
+	if c, _ := e.post("/api/handoff/email", `{"to":""}`); c != 400 {
+		t.Error("address required")
+	}
+	c, out := e.post("/api/handoff/email", `{"to":"next@example.com; gm@example.com","message":"Read this"}`)
+	if c != 200 || out["method"] != "outlook" {
+		t.Fatalf("handoff email: %v %v", c, out)
 	}
 }

@@ -633,7 +633,7 @@ function vNotes() {
     <div class="row" style="margin-top:8px"><label style="margin:0">Your name:</label><input id="noteby" class="field" style="width:200px" value="${esc(remembered("by"))}"><button class="btn green" data-act="note-add">${icon("plus")}Add Note</button></div>
   </div>
   <div class="panel" style="max-width:860px">
-    <h3 style="margin-top:0">Open notes</h3>
+    <div class="row" style="justify-content:space-between"><h3 style="margin:0">Open notes</h3><span><button class="btn small" data-act="handoff-view">${icon("print")}View / Print Handoff</button> <button class="btn small green" data-act="handoff-email">${icon("up")}Email Handoff</button></span></div>
     <div class="scrolly">${open.length ? open.map(n => `<div class="catrow"><div class="grow"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="hint">${esc(n.by) || "A manager"}, ${when(n.at)}</div></div><button class="btn small green" data-act="note-done" data-id="${n.id}">Done</button></div>`).join("") : `<p class="hint">No open notes.</p>`}</div>
   </div>
   ${done.length ? `<div class="panel" style="max-width:860px"><h3 style="margin-top:0">Finished notes</h3><div class="scrolly">${done.map(n => `<div class="catrow"><div class="grow"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="hint">${esc(n.by) || "A manager"}, ${when(n.at)} · finished ${when(n.doneAt)}${n.doneBy ? " by " + esc(n.doneBy) : ""}</div></div><button class="btn small" data-act="note-reopen" data-id="${n.id}">Reopen</button></div>`).join("")}</div></div>` : ""}`;
@@ -1089,6 +1089,18 @@ const ACT = {
     <div class="foot"><button class="btn wine big" data-act="purge-go" data-id="${el.dataset.id}">${icon("trash")}Delete Permanently</button><button class="btn big" data-act="close">Cancel</button></div>`); },
   async "purge-go"(el) { el.disabled = true; await api("/api/removed/" + el.dataset.id, {method: "DELETE"}); closeModal(); await reload(); render(); toast("Deleted permanently."); },
   async "restore-product"(el) { const p = await api("/api/removed/" + el.dataset.id + "/restore", {method: "POST"}); await reload(); render(); toast(`“${p.name}” is back in the library.`); },
+  "handoff-view"() { window.open("/api/handoff/report?print=1", "_blank"); },
+  "handoff-email"() { let last = ""; try { last = localStorage.getItem("sds.handoffTo") || ""; } catch (e) {}
+    showModal(`<h2>${icon("up")}Email Manager Handoff</h2><div class="body"><div class="fields">
+      <label>To: <span class="req">*</span></label><input class="field" id="hoto" value="${esc(last)}" placeholder="manager@example.com; another@example.com">
+      <label>Subject:</label><input class="field" id="hosub" placeholder="Manager Handoff">
+      <label>Message:</label><textarea class="field" rows="4" id="homsg" placeholder="Optional note to go above the report"></textarea></div>
+      <p class="hint">This opens a new message in Outlook with the handoff attached as a PDF (or a web page if a PDF could not be made). Check it, then press Send in Outlook.</p></div>
+      <div class="foot"><button class="btn green big" data-act="handoff-email-go">${icon("up")}Open in Outlook</button><button class="btn big" data-act="close">Cancel</button></div>`); },
+  async "handoff-email-go"() { const to = $("#hoto").value; if (!to.trim()) return toast("Enter who to send it to.", true);
+    try { localStorage.setItem("sds.handoffTo", to); } catch (e) {}
+    try { const o = await api("/api/handoff/email", {method: "POST", body: JSON.stringify({to, subject: $("#hosub").value, message: $("#homsg").value})}); closeModal();
+      toast(o.method === "outlook" ? "The message is open in Outlook with the handoff attached. Press Send there." : "Outlook could not be opened for you. A new message is open; attach the handoff from the folder that opened.", o.method !== "outlook"); } catch (e) { toast(e.message, true); } },
   "view-removed"(el) { window.open("/pdf-removed/" + el.dataset.id, "_blank"); },
   tab(el) { state.tab = el.dataset.t; render(); loadTab(); },
   "binder-mark"() { const lb = state.lib.lastBuild;

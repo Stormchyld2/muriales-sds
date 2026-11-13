@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const appVersion = "1.5.6"
+const appVersion = "1.6.0"
 
 // ---------------------------------------------------------------- notes
 
@@ -344,6 +344,7 @@ func (s *store) moreRoutes(mux *http.ServeMux) {
 	s.locationRoutes(mux)
 	s.purgeRoutes(mux)
 	// ---- handoff notes
+	s.handoffRoutes(mux)
 	mux.HandleFunc("POST /api/notes", func(w http.ResponseWriter, r *http.Request) {
 		var in struct {
 			By   string `json:"by"`
