@@ -149,7 +149,7 @@ func (s *store) handoffRoutes(mux *http.ServeMux) {
 			body += "\r\n\r\n"
 		}
 		body += handoffText(rows)
-		method, detail := composeEmail(addrs, subject, body, attach, dir)
+		method, detail, onClip := composeEmail(addrs, subject, body, attach, dir)
 		if detail != "" {
 			s.logf("Outlook draft failed: %v", detail)
 		}
@@ -157,6 +157,6 @@ func (s *store) handoffRoutes(mux *http.ServeMux) {
 		if len(short) > 6000 {
 			short = short[:6000]
 		}
-		writeJSON(w, 200, map[string]any{"method": method, "detail": detail, "text": short, "file": filepath.Base(attach), "folder": dir})
+		writeJSON(w, 200, map[string]any{"method": method, "detail": detail, "text": short, "fileOnClipboard": onClip, "file": filepath.Base(attach), "folder": dir})
 	})
 }

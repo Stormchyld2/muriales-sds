@@ -32,7 +32,7 @@ func openOutlookDraft(to []string, subject, body, attach string) error {
 
 func openMailto(to []string, subject, body string) { fmt.Println("mailto", to, subject) }
 
-func composeEmail(to []string, subject, body, attach, dir string) (string, string) {
+func composeEmail(to []string, subject, body, attach, dir string) (string, string, bool) {
 	fmt.Println("compose email", to, subject, attach)
-	return "outlook", ""
+	return "outlook", "", false
 }

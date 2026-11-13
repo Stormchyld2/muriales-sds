@@ -122,26 +122,54 @@ func openOutlookDraft(to []string, subject, body, attach string) error {
 	script := "$ErrorActionPreference='Stop'; $o=New-Object -ComObject Outlook.Application; $m=$o.CreateItem(0); " +
 		"$m.To=$env:SDS_TO; $m.Subject=$env:SDS_SUBJECT; $m.Body=$env:SDS_BODY; $m.Attachments.Add($env:SDS_FILE) | Out-Null; $m.Display(); " +
 		"try { $m.GetInspector.Activate() } catch {}; try { (New-Object -ComObject WScript.Shell).AppActivate($m.Subject) | Out-Null } catch {}"
-	ctx, cancel := context.WithTimeout(context.Background(), 75*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script)
-	cmd.Env = append(os.Environ(), "SDS_TO="+strings.Join(to, ";"), "SDS_SUBJECT="+subject, "SDS_BODY="+body, "SDS_FILE="+attach)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000}
-	out, err := cmd.CombinedOutput()
-	if err != nil {
+	// Office installed as 32-bit cannot be reached from 64-bit PowerShell
+	// (error 80040154), so the 32-bit PowerShell is tried as well.
+	shells := []string{"powershell.exe"}
+	if root := os.Getenv("SystemRoot"); root != "" {
+		p := filepath.Join(root, "SysWOW64", "WindowsPowerShell", "v1.0", "powershell.exe")
+		if _, err := os.Stat(p); err == nil {
+			shells = append(shells, p)
+		}
+	}
+	var last error
+	for _, sh := range shells {
+		ctx, cancel := context.WithTimeout(context.Background(), 75*time.Second)
+		cmd := exec.CommandContext(ctx, sh, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script)
+		cmd.Env = append(os.Environ(), "SDS_TO="+strings.Join(to, ";"), "SDS_SUBJECT="+subject, "SDS_BODY="+body, "SDS_FILE="+attach)
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000}
+		out, err := cmd.CombinedOutput()
+		timedOut := ctx.Err() != nil
+		cancel()
+		if err == nil {
+			return nil
+		}
 		msg := strings.TrimSpace(string(out))
 		if len(msg) > 300 {
 			msg = msg[:300]
 		}
-		if ctx.Err() != nil {
-			msg = "Outlook took too long to answer"
+		if timedOut {
+			return fmt.Errorf("Outlook took too long to answer")
 		}
 		if msg == "" {
 			msg = err.Error()
 		}
-		return fmt.Errorf("%s", msg)
+		last = fmt.Errorf("%s", msg)
+		if !strings.Contains(msg, "80040154") {
+			break
+		}
 	}
-	return nil
+	return last
+}
+
+// copyFileToClipboard puts the file on the clipboard, so Ctrl+V in a message
+// window attaches it.
+func copyFileToClipboard(path string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", "Set-Clipboard -Path $env:SDS_FILE")
+	cmd.Env = append(os.Environ(), "SDS_FILE="+path)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000}
+	return cmd.Run() == nil
 }
 
 // outlookExe finds the classic Outlook program, which can start a message
@@ -163,25 +191,26 @@ func outlookExe() string {
 
 // composeEmail tries Outlook first, then Outlook's command line, then the
 // default mail program. The second result explains why Outlook was skipped.
-func composeEmail(to []string, subject, body, attach, dir string) (string, string) {
+func composeEmail(to []string, subject, body, attach, dir string) (string, string, bool) {
 	err := openOutlookDraft(to, subject, body, attach)
 	if err == nil {
-		return "outlook", ""
+		return "outlook", "", false
 	}
 	detail := err.Error()
 	if exe := outlookExe(); exe != "" {
-		args := []string{"/c", "ipm.note", "/m", strings.Join(to, ";") + "?subject=" + strings.ReplaceAll(url.QueryEscape(subject), "+", "%20"), "/a", attach}
+		args := []string{"/c", "ipm.note", "/m", strings.Join(to, ";") + "?subject=" + strings.ReplaceAll(url.QueryEscape(subject), "+", "%%20"), "/a", attach}
 		if exec.Command(exe, args...).Start() == nil {
-			return "outlook", ""
+			return "outlook", "", false
 		}
 	}
 	short := body
-	if len(short) > 1200 {
-		short = short[:1200] + "..."
+	if len(short) > 1800 {
+		short = short[:1800] + "..."
 	}
+	onClip := copyFileToClipboard(attach)
 	openMailto(to, subject, short)
 	openFolder(dir)
-	return "mailto", detail
+	return "mailto", detail, onClip
 }
 
 // openMailto opens the default mail program with a new message.
