@@ -135,7 +135,7 @@ func (s *store) handoffRoutes(mux *http.ServeMux) {
 			fail(w, 500, "The reports folder could not be made: "+err.Error())
 			return
 		}
-		file := filepath.Join(dir, strings.TrimSpace(safeName.ReplaceAllString("Manager Handoff "+time.Now().Format("2006-01-02 1504"), ""))+".html")
+		file := filepath.Join(dir, strings.TrimSpace(safeName.ReplaceAllString("Manager Handoff "+time.Now().Format("2006-01-02"), ""))+".html")
 		if err := os.WriteFile(file, []byte(handoffHTML(rows, true)), 0o644); err != nil {
 			fail(w, 500, "The report could not be saved: "+err.Error())
 			return
@@ -145,6 +145,7 @@ func (s *store) handoffRoutes(mux *http.ServeMux) {
 		if pdf := file[:len(file)-5] + ".pdf"; true {
 			if perr := htmlToPDF(file, pdf); perr == nil {
 				attach = pdf
+				_ = os.Remove(file)
 			} else {
 				pdfNote = perr.Error()
 				s.logf("PDF could not be made: %v", perr)

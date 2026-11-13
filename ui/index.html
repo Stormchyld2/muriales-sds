@@ -171,7 +171,7 @@ function emailResult(o, what) {
     ${o.pdfNote ? `<p class="hint">A PDF could not be made, so the report was saved as a web page instead (${esc(o.pdfNote)}). You can open it and use Print, Save as PDF.</p>` : ""}
     <p class="hint">The folder also holds an <b>(email draft).eml</b> file. Double-click it and, depending on your Outlook, it may open as a ready draft with the ${esc(what)} already attached.</p>
     <p class="hint">If no mail window opened, your computer has no mail program set up for links. Open Outlook yourself, start a new message, paste the text below and attach the file.</p>
-    <textarea class="field" rows="6" readonly onclick="this.select()">${esc(o.text || "")}</textarea></div><div class="foot"><button class="btn big" data-act="close">Close</button></div>`);
+    <textarea class="field" rows="6" readonly onclick="this.select()">${esc(o.text || "")}</textarea></div><div class="foot"><button class="btn big" data-act="open-reports">${icon("folder")}Open Reports Folder</button><button class="btn big" data-act="close">Close</button></div>`);
 }
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -1138,6 +1138,7 @@ const ACT = {
       <p>The current library is not deleted. It is moved into a “Before restore” folder inside SDS Backups. If the backup does not open correctly, the current library is put back.</p></div>
       <div class="foot"><button class="btn wine big" data-act="restore-go" data-file="${esc(file)}">Restore This Backup</button><button class="btn big" data-act="close">Cancel</button></div>`); },
   async "restore-go"(el) { el.disabled = true; const r = await api("/api/restore", {method: "POST", body: JSON.stringify({file: el.dataset.file})}); closeModal(); state.sel.clear(); await reload(); await loadBackups(); toast(`Backup restored: ${r.products} products. The previous library is in ${r.previousKeptIn}`); },
+  "open-reports"() { return api("/api/open-folder?which=reports", {method: "POST"}); },
   "open-backups"() { return api("/api/open-folder?which=backups", {method: "POST"}); },
   "folder-ask"() { showModal(`<h2>${icon("folder")}Change Library Location</h2><div class="body">
       <p style="margin-top:0">Paste the full path of the folder to keep the library in. For Microsoft 365, use the OneDrive or SharePoint folder that is synced to this computer, or a mapped network drive.</p>
