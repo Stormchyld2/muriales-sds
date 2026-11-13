@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"os"
 	"os/exec"
@@ -99,7 +100,7 @@ func htmlToPDF(src, dst string) error {
 	}
 	profile := filepath.Join(os.TempDir(), "MurialesSDSBook-pdf")
 	_ = os.MkdirAll(profile, 0o755)
-	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	u := (&url.URL{Scheme: "file", Path: "/" + filepath.ToSlash(src)}).String()
 	cmd := exec.CommandContext(ctx, edge, "--headless=new", "--disable-gpu", "--no-first-run", "--user-data-dir="+profile,
@@ -119,13 +120,68 @@ func htmlToPDF(src, dst string) error {
 // variables, never put into the script, so nothing typed can run as code.
 func openOutlookDraft(to []string, subject, body, attach string) error {
 	script := "$ErrorActionPreference='Stop'; $o=New-Object -ComObject Outlook.Application; $m=$o.CreateItem(0); " +
-		"$m.To=$env:SDS_TO; $m.Subject=$env:SDS_SUBJECT; $m.Body=$env:SDS_BODY; $m.Attachments.Add($env:SDS_FILE) | Out-Null; $m.Display()"
-	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+		"$m.To=$env:SDS_TO; $m.Subject=$env:SDS_SUBJECT; $m.Body=$env:SDS_BODY; $m.Attachments.Add($env:SDS_FILE) | Out-Null; $m.Display(); " +
+		"try { $m.GetInspector.Activate() } catch {}; try { (New-Object -ComObject WScript.Shell).AppActivate($m.Subject) | Out-Null } catch {}"
+	ctx, cancel := context.WithTimeout(context.Background(), 75*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script)
 	cmd.Env = append(os.Environ(), "SDS_TO="+strings.Join(to, ";"), "SDS_SUBJECT="+subject, "SDS_BODY="+body, "SDS_FILE="+attach)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000}
-	return cmd.Run()
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		msg := strings.TrimSpace(string(out))
+		if len(msg) > 300 {
+			msg = msg[:300]
+		}
+		if ctx.Err() != nil {
+			msg = "Outlook took too long to answer"
+		}
+		if msg == "" {
+			msg = err.Error()
+		}
+		return fmt.Errorf("%s", msg)
+	}
+	return nil
+}
+
+// outlookExe finds the classic Outlook program, which can start a message
+// from the command line even when it cannot be driven from a script.
+func outlookExe() string {
+	for _, root := range []string{os.Getenv("ProgramFiles"), os.Getenv("ProgramFiles(x86)")} {
+		if root == "" {
+			continue
+		}
+		for _, v := range []string{"root\\Office16", "Office16", "root\\Office15", "Office15", "Office14"} {
+			p := filepath.Join(root, "Microsoft Office", v, "OUTLOOK.EXE")
+			if _, err := os.Stat(p); err == nil {
+				return p
+			}
+		}
+	}
+	return ""
+}
+
+// composeEmail tries Outlook first, then Outlook's command line, then the
+// default mail program. The second result explains why Outlook was skipped.
+func composeEmail(to []string, subject, body, attach, dir string) (string, string) {
+	err := openOutlookDraft(to, subject, body, attach)
+	if err == nil {
+		return "outlook", ""
+	}
+	detail := err.Error()
+	if exe := outlookExe(); exe != "" {
+		args := []string{"/c", "ipm.note", "/m", strings.Join(to, ";") + "?subject=" + strings.ReplaceAll(url.QueryEscape(subject), "+", "%20"), "/a", attach}
+		if exec.Command(exe, args...).Start() == nil {
+			return "outlook", ""
+		}
+	}
+	short := body
+	if len(short) > 1200 {
+		short = short[:1200] + "..."
+	}
+	openMailto(to, subject, short)
+	openFolder(dir)
+	return "mailto", detail
 }
 
 // openMailto opens the default mail program with a new message.

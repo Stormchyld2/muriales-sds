@@ -149,17 +149,14 @@ func (s *store) handoffRoutes(mux *http.ServeMux) {
 			body += "\r\n\r\n"
 		}
 		body += handoffText(rows)
-		method := "outlook"
-		if err := openOutlookDraft(addrs, subject, body, attach); err != nil {
-			method = "mailto"
-			short := body
-			if len(short) > 1200 {
-				short = short[:1200] + "..."
-			}
-			openMailto(addrs, subject, short)
-			openFolder(dir)
-			s.logf("Outlook draft failed: %v", err)
+		method, detail := composeEmail(addrs, subject, body, attach, dir)
+		if detail != "" {
+			s.logf("Outlook draft failed: %v", detail)
 		}
-		writeJSON(w, 200, map[string]any{"method": method, "file": filepath.Base(attach), "folder": dir})
+		short := body
+		if len(short) > 6000 {
+			short = short[:6000]
+		}
+		writeJSON(w, 200, map[string]any{"method": method, "detail": detail, "text": short, "file": filepath.Base(attach), "folder": dir})
 	})
 }
