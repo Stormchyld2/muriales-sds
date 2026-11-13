@@ -168,6 +168,7 @@ function emailResult(o, what) {
   if (!o.fileOnClipboard) { try { navigator.clipboard.writeText(o.text || ""); } catch (e) {} }
   showModal(`<h2>${icon("ext")}Finish the email</h2><div class="body"><p style="margin-top:0">Outlook could not be opened automatically${o.detail ? ` (<span class="hint">${esc(o.detail)}</span>)` : ""}. A new message was opened in your default mail program and the folder holding the ${esc(what)} was opened.</p>
     ${o.fileOnClipboard ? `<p><b>Click inside the new message and press Ctrl+V</b> to attach the ${esc(what)} (${esc(o.file)}). It is also in the folder that opened.</p>` : `<p>Attach <b>${esc(o.file)}</b> from that folder. The message text was copied, so you can also paste it into any email.</p>`}
+    <p class="hint">The folder also holds an <b>(email draft).eml</b> file. Double-click it and, depending on your Outlook, it may open as a ready draft with the ${esc(what)} already attached.</p>
     <p class="hint">If no mail window opened, your computer has no mail program set up for links. Open Outlook yourself, start a new message, paste the text below and attach the file.</p>
     <textarea class="field" rows="6" readonly onclick="this.select()">${esc(o.text || "")}</textarea></div><div class="foot"><button class="btn big" data-act="close">Close</button></div>`);
 }

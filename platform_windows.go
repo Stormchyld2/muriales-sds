@@ -208,6 +208,7 @@ func composeEmail(to []string, subject, body, attach, dir string) (string, strin
 		short = short[:1800] + "..."
 	}
 	onClip := copyFileToClipboard(attach)
+	writeEML(to, subject, body, attach, dir)
 	openMailto(to, subject, short)
 	openFolder(dir)
 	return "mailto", detail, onClip
