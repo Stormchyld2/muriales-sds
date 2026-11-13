@@ -25,14 +25,9 @@ func freeSpace(string) int64 { return -1 }
 
 func htmlToPDF(src, dst string) error { return os.ErrNotExist }
 
-func openOutlookDraft(to []string, subject, body, attach string) error {
-	fmt.Println("outlook draft", to, subject, attach)
-	return nil
-}
-
 func openMailto(to []string, subject, body string) { fmt.Println("mailto", to, subject) }
 
-func composeEmail(to []string, subject, body, attach, dir string) (string, string, bool) {
-	fmt.Println("compose email", to, subject, attach)
+func composeEmail(to []string, subject, body string) (string, string, bool) {
+	fmt.Println("compose email", to, subject)
 	return "outlook", "", false
 }

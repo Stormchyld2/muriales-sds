@@ -122,12 +122,12 @@ func htmlToPDF(src, dst string) error {
 	return last
 }
 
-// openOutlookDraft opens a new message in Outlook with the file attached. The
-// message is shown, not sent. All text is passed through environment
-// variables, never put into the script, so nothing typed can run as code.
-func openOutlookDraft(to []string, subject, body, attach string) error {
+// openOutlookDraft opens a new message in classic Outlook. The message is
+// shown, not sent. All text is passed through environment variables, never
+// put into the script, so nothing typed can run as code.
+func openOutlookDraft(to []string, subject, body string) error {
 	script := "$ErrorActionPreference='Stop'; $o=New-Object -ComObject Outlook.Application; $m=$o.CreateItem(0); " +
-		"$m.To=$env:SDS_TO; $m.Subject=$env:SDS_SUBJECT; $m.Body=$env:SDS_BODY; $m.Attachments.Add($env:SDS_FILE) | Out-Null; $m.Display(); " +
+		"$m.To=$env:SDS_TO; $m.Subject=$env:SDS_SUBJECT; $m.Body=$env:SDS_BODY; $m.Display(); " +
 		"try { $m.GetInspector.Activate() } catch {}; try { (New-Object -ComObject WScript.Shell).AppActivate($m.Subject) | Out-Null } catch {}"
 	// Office installed as 32-bit cannot be reached from 64-bit PowerShell
 	// (error 80040154), so the 32-bit PowerShell is tried as well.
@@ -142,7 +142,7 @@ func openOutlookDraft(to []string, subject, body, attach string) error {
 	for _, sh := range shells {
 		ctx, cancel := context.WithTimeout(context.Background(), 75*time.Second)
 		cmd := exec.CommandContext(ctx, sh, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script)
-		cmd.Env = append(os.Environ(), "SDS_TO="+strings.Join(to, ";"), "SDS_SUBJECT="+subject, "SDS_BODY="+body, "SDS_FILE="+attach)
+		cmd.Env = append(os.Environ(), "SDS_TO="+strings.Join(to, ";"), "SDS_SUBJECT="+subject, "SDS_BODY="+body)
 		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000}
 		out, err := cmd.CombinedOutput()
 		timedOut := ctx.Err() != nil
@@ -168,59 +168,20 @@ func openOutlookDraft(to []string, subject, body, attach string) error {
 	return last
 }
 
-// copyFileToClipboard puts the file on the clipboard, so Ctrl+V in a message
-// window attaches it.
-func copyFileToClipboard(path string) bool {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", "Set-Clipboard -Path $env:SDS_FILE")
-	cmd.Env = append(os.Environ(), "SDS_FILE="+path)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000}
-	return cmd.Run() == nil
-}
-
-// outlookExe finds the classic Outlook program, which can start a message
-// from the command line even when it cannot be driven from a script.
-func outlookExe() string {
-	for _, root := range []string{os.Getenv("ProgramFiles"), os.Getenv("ProgramFiles(x86)")} {
-		if root == "" {
-			continue
-		}
-		for _, v := range []string{"root\\Office16", "Office16", "root\\Office15", "Office15", "Office14"} {
-			p := filepath.Join(root, "Microsoft Office", v, "OUTLOOK.EXE")
-			if _, err := os.Stat(p); err == nil {
-				return p
-			}
-		}
-	}
-	return ""
-}
-
-// composeEmail tries Outlook first, then Outlook's command line, then the
-// default mail program. The second result explains why Outlook was skipped.
-func composeEmail(to []string, subject, body, attach, dir string) (string, string, bool) {
-	err := openOutlookDraft(to, subject, body, attach)
+// composeEmail tries classic Outlook, then the default mail program (which
+// includes the new Outlook). The text goes in the message itself. The last
+// result says the text was too long for a mail link and was cut short.
+func composeEmail(to []string, subject, body string) (string, string, bool) {
+	err := openOutlookDraft(to, subject, body)
 	if err == nil {
 		return "outlook", "", false
 	}
-	detail := err.Error()
-	if exe := outlookExe(); exe != "" {
-		args := []string{"/c", "ipm.note", "/m", strings.Join(to, ";") + "?subject=" + strings.ReplaceAll(url.QueryEscape(subject), "+", "%%20"), "/a", attach}
-		if exec.Command(exe, args...).Start() == nil {
-			return "outlook", "", false
-		}
-	}
-	short := body
+	short, cut := body, false
 	if len(short) > 1800 {
-		short = short[:1800] + "..."
+		short, cut = short[:1800]+"...", true
 	}
-	onClip := copyFileToClipboard(attach)
-	writeEML(to, subject, body, attach, dir)
 	openMailto(to, subject, short)
-	if !onClip {
-		openFolder(dir)
-	}
-	return "mailto", detail, onClip
+	return "mailto", err.Error(), cut
 }
 
 // openMailto opens the default mail program with a new message.

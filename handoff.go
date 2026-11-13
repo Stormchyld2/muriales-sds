@@ -11,7 +11,6 @@ import (
 	"html"
 	"net/http"
 	"net/mail"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -130,40 +129,15 @@ func (s *store) handoffRoutes(mux *http.ServeMux) {
 		s.mu.Lock()
 		rows := s.handoffRows()
 		s.mu.Unlock()
-		dir := s.handoffDir()
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			fail(w, 500, "The reports folder could not be made: "+err.Error())
-			return
-		}
-		file := filepath.Join(dir, strings.TrimSpace(safeName.ReplaceAllString("Manager Handoff "+time.Now().Format("2006-01-02"), ""))+".html")
-		if err := os.WriteFile(file, []byte(handoffHTML(rows, true)), 0o644); err != nil {
-			fail(w, 500, "The report could not be saved: "+err.Error())
-			return
-		}
-		attach := file
-		pdfNote := ""
-		if pdf := file[:len(file)-5] + ".pdf"; true {
-			if perr := htmlToPDF(file, pdf); perr == nil {
-				attach = pdf
-				_ = os.Remove(file)
-			} else {
-				pdfNote = perr.Error()
-				s.logf("PDF could not be made: %v", perr)
-			}
-		}
 		body := strings.TrimSpace(in.Message)
 		if body != "" {
 			body += "\r\n\r\n"
 		}
 		body += handoffText(rows)
-		method, detail, onClip := composeEmail(addrs, subject, body, attach, dir)
+		method, detail, cut := composeEmail(addrs, subject, body)
 		if detail != "" {
 			s.logf("Outlook draft failed: %v", detail)
 		}
-		short := body
-		if len(short) > 6000 {
-			short = short[:6000]
-		}
-		writeJSON(w, 200, map[string]any{"method": method, "detail": detail, "text": short, "fileOnClipboard": onClip, "pdfNote": pdfNote, "file": filepath.Base(attach), "folder": dir})
+		writeJSON(w, 200, map[string]any{"method": method, "detail": detail, "text": body, "cut": cut})
 	})
 }
