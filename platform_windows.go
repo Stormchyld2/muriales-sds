@@ -100,19 +100,26 @@ func htmlToPDF(src, dst string) error {
 	}
 	profile := filepath.Join(os.TempDir(), "MurialesSDSBook-pdf")
 	_ = os.MkdirAll(profile, 0o755)
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
 	u := (&url.URL{Scheme: "file", Path: "/" + filepath.ToSlash(src)}).String()
-	cmd := exec.CommandContext(ctx, edge, "--headless=new", "--disable-gpu", "--no-first-run", "--user-data-dir="+profile,
-		"--no-pdf-header-footer", "--print-to-pdf="+dst, u)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000}
-	if err := cmd.Run(); err != nil {
-		return err
+	var last error = os.ErrNotExist
+	// Edge sometimes writes the PDF and then does not exit, so the file is
+	// checked even when the program had to be stopped.
+	for _, mode := range []string{"--headless=new", "--headless"} {
+		_ = os.Remove(dst)
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		cmd := exec.CommandContext(ctx, edge, mode, "--disable-gpu", "--no-first-run", "--no-default-browser-check", "--user-data-dir="+profile,
+			"--no-pdf-header-footer", "--virtual-time-budget=4000", "--print-to-pdf="+dst, u)
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000}
+		err := cmd.Run()
+		cancel()
+		if info, serr := os.Stat(dst); serr == nil && info.Size() > 0 {
+			return nil
+		}
+		if err != nil {
+			last = err
+		}
 	}
-	if info, err := os.Stat(dst); err != nil || info.Size() == 0 {
-		return os.ErrNotExist
-	}
-	return nil
+	return last
 }
 
 // openOutlookDraft opens a new message in Outlook with the file attached. The
